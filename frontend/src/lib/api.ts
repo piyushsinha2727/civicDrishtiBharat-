@@ -1,22 +1,23 @@
+const PROD_BACKEND_URL = "https://civicdrishtibharat-backend.onrender.com";
+
 /**
- * Centralized API URL helper with auto-detection for Vercel vs local development.
- * On Vercel: uses origin-relative "/api" (no env var needed).
- * On local: uses VITE_API_URL or defaults to "http://localhost:5000/api".
+ * Centralized API URL helper with auto-detection for production vs local development.
+ * In production: points to live Render backend https://civicdrishtibharat-backend.onrender.com/api
+ * On local: uses VITE_API_URL or defaults to http://localhost:5000/api
  */
 export const getApiUrl = (path: string): string => {
   let baseUrl: string;
 
   const envUrl = import.meta.env.VITE_API_URL;
 
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    // Production (Vercel): use origin-relative URL
-    baseUrl = `${window.location.origin}/api`;
-  } else if (envUrl && envUrl !== "undefined" && !envUrl.includes("undefined")) {
-    // Local dev with env var set
+  if (envUrl && envUrl !== "undefined" && !envUrl.includes("undefined")) {
     baseUrl = envUrl.replace(/\/$/, "");
     if (!baseUrl.endsWith("/api")) {
       baseUrl = `${baseUrl}/api`;
     }
+  } else if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // Production: use live Render backend
+    baseUrl = `${PROD_BACKEND_URL}/api`;
   } else {
     // Local dev fallback
     baseUrl = "http://localhost:5000/api";
@@ -31,12 +32,12 @@ export const getApiUrl = (path: string): string => {
  * Used for static file URLs like document downloads.
  */
 export const getBaseUrl = (): string => {
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    return window.location.origin;
-  }
   const envUrl = import.meta.env.VITE_API_URL;
   if (envUrl && envUrl !== "undefined" && !envUrl.includes("undefined")) {
     return envUrl.replace(/\/api\/?$/, "");
+  }
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return PROD_BACKEND_URL;
   }
   return "http://localhost:5000";
 };
