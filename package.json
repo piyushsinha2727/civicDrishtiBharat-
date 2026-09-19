@@ -1,0 +1,19 @@
+{
+  "name": "civic-drishti-bharat-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd backend && npm start"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mongoose": "^8.3.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "@google/generative-ai": "^0.11.1",
+    "pdfkit": "^0.15.0",
+    "qrcode": "^1.5.3",
+    "puppeteer": "^22.6.5"
+  }
+}
