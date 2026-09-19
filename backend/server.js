@@ -43,10 +43,10 @@ app.use(async (req, res, next) => {
 });
 
 // Root route
-app.get("/", (req, res) => {
+app.get(["/", "/api"], (req, res) => {
     console.log("Root route hit!");
     res.json({
-        message: "UrbanReport AI Backend is running with MongoDB Atlas!",
+        message: "CivicDrishti Bharat AI Backend is running with MongoDB Atlas!",
         version: "1.0.0",
         status: "Online"
     });
