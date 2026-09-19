@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield, LogOut, Menu, X, User, LayoutDashboard, FileText, Building2, Wrench, Bell } from 'lucide-react';
+import { Shield, LogOut, Menu, X, User, LayoutDashboard, FileText, Building2, Bell } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -30,17 +30,17 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-red-900/40 bg-[#7a0000]/95 backdrop-blur-xl shadow-lg">
-      <div className="container max-w-7xl mx-auto px-3 sm:px-6 flex h-16 items-center justify-between gap-2">
+    <nav className="sticky top-0 z-50 border-b border-red-900/40 bg-[#7a0000] text-white shadow-md">
+      <div className="container max-w-7xl mx-auto px-3 sm:px-6 flex h-14 sm:h-16 items-center justify-between gap-2">
         
         {/* Brand Logo & Name */}
-        <Link to="/" className="flex items-center gap-2 sm:gap-3 group shrink-0">
-          <div className="relative flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl overflow-hidden shadow-glow-sm transition-transform duration-300 group-hover:scale-105">
+        <Link to="/" className="flex items-center gap-2 group shrink-0">
+          <div className="relative flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg sm:rounded-xl overflow-hidden shadow-sm transition-transform group-hover:scale-105">
             <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-500 to-red-600" />
-            <span className="relative z-10 text-white font-black text-[12px] sm:text-[13px] tracking-tight leading-none select-none">CDB</span>
+            <span className="relative z-10 text-white font-black text-[11px] sm:text-[13px] tracking-tight leading-none select-none">CDB</span>
           </div>
           
-          <div className="flex flex-col leading-tight">
+          <div className="flex flex-col leading-none">
             <span
               className="text-[15px] sm:text-[18px] font-black tracking-tight text-white leading-none flex items-center"
               style={{ fontFamily: "'Montserrat', 'Inter', sans-serif" }}
@@ -48,7 +48,7 @@ export default function Navbar() {
               CivicDrishti
               <span className="ml-1 text-amber-300 font-extrabold">Bharat</span>
             </span>
-            <span className="hidden xs:block text-[8px] sm:text-[9px] font-bold uppercase tracking-[0.16em] text-red-200/80 leading-none mt-0.5">
+            <span className="hidden sm:block text-[8px] font-bold uppercase tracking-[0.16em] text-red-200/80 mt-0.5">
               Urban AI Governance
             </span>
           </div>
@@ -121,29 +121,26 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile Header Bar Controls (visible on phones) */}
-        <div className="flex items-center gap-1.5 md:hidden">
-          <ThemeToggle />
-          
+        {/* Mobile Header Bar Controls (Optimized for 320px - 430px screens) */}
+        <div className="flex items-center gap-2 md:hidden">
           {user ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(getDashboardPath())}
-              className="h-8 px-2 flex items-center gap-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 border border-white/20"
+            <button
+              onClick={() => navigate('/profile')}
+              className="flex items-center justify-center h-8 w-8 rounded-full border border-white/30 bg-white/10 text-white shadow-sm overflow-hidden"
+              aria-label="User Profile"
             >
-              <Avatar className="h-5 w-5">
-                <AvatarFallback className="text-[9px] bg-amber-500 text-white font-bold">
+              <Avatar className="h-full w-full">
+                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}&backgroundColor=800000,000000`} alt={user.name} />
+                <AvatarFallback className="text-[11px] bg-amber-500 text-white font-bold">
                   {user.name.substring(0, 1).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-xs font-bold truncate max-w-[70px]">{user.name.split(' ')[0]}</span>
-            </Button>
+            </button>
           ) : (
             <Button
               size="sm"
               onClick={() => navigate('/login')}
-              className="h-8 px-2.5 text-xs font-bold bg-amber-400 hover:bg-amber-300 text-red-950 shadow-sm"
+              className="h-8 px-3 text-xs font-black bg-amber-400 hover:bg-amber-300 text-red-950 rounded-lg shadow-sm"
             >
               Sign In
             </Button>
@@ -152,10 +149,10 @@ export default function Navbar() {
           {/* Hamburger Toggle */}
           <button
             aria-label="Toggle navigation menu"
-            className="p-1.5 rounded-lg text-white/90 hover:text-white hover:bg-white/10 transition-colors"
+            className="flex items-center justify-center h-8 w-8 rounded-lg text-white hover:bg-white/15 transition-colors border border-white/20"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
-            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
@@ -169,12 +166,15 @@ export default function Navbar() {
             exit={{ opacity: 0, height: 0 }}
             className="md:hidden border-t border-red-900/60 bg-[#5c0000] text-white overflow-hidden shadow-2xl"
           >
-            <div className="container px-4 py-4 flex flex-col gap-2.5">
+            <div className="px-4 py-4 flex flex-col gap-3">
               
-              {/* Widgets on Mobile */}
-              <div className="flex items-center justify-between pb-3 border-b border-white/10 text-xs text-white/80">
+              {/* Widgets & Toggles on Mobile */}
+              <div className="flex items-center justify-between pb-3 border-b border-white/15 text-xs text-white/90">
                 <TimeWidget />
-                <LanguageToggle />
+                <div className="flex items-center gap-2">
+                  <LanguageToggle />
+                  <ThemeToggle />
+                </div>
               </div>
 
               {user ? (
@@ -195,14 +195,14 @@ export default function Navbar() {
                     <Button
                       variant="ghost"
                       onClick={() => { navigate(getDashboardPath()); setMobileOpen(false); }}
-                      className="justify-start bg-white/5 hover:bg-white/10 text-white h-10 text-xs font-semibold rounded-lg"
+                      className="justify-start bg-white/5 hover:bg-white/15 text-white h-10 text-xs font-bold rounded-lg"
                     >
                       <LayoutDashboard className="mr-2 h-4 w-4 text-amber-400" /> Dashboard
                     </Button>
                     <Button
                       variant="ghost"
                       onClick={() => { navigate('/profile'); setMobileOpen(false); }}
-                      className="justify-start bg-white/5 hover:bg-white/10 text-white h-10 text-xs font-semibold rounded-lg"
+                      className="justify-start bg-white/5 hover:bg-white/15 text-white h-10 text-xs font-bold rounded-lg"
                     >
                       <User className="mr-2 h-4 w-4 text-blue-300" /> My Profile
                     </Button>
@@ -213,14 +213,14 @@ export default function Navbar() {
                       <Button
                         variant="ghost"
                         onClick={() => { navigate('/dashboard?tab=report'); setMobileOpen(false); }}
-                        className="justify-start bg-white/5 hover:bg-white/10 text-white h-10 text-xs font-semibold rounded-lg"
+                        className="justify-start bg-white/5 hover:bg-white/15 text-white h-10 text-xs font-bold rounded-lg"
                       >
                         <FileText className="mr-2 h-4 w-4 text-emerald-400" /> Report Issue
                       </Button>
                       <Button
                         variant="ghost"
                         onClick={() => { navigate('/applications/sent'); setMobileOpen(false); }}
-                        className="justify-start bg-white/5 hover:bg-white/10 text-white h-10 text-xs font-semibold rounded-lg"
+                        className="justify-start bg-white/5 hover:bg-white/15 text-white h-10 text-xs font-bold rounded-lg"
                       >
                         <Bell className="mr-2 h-4 w-4 text-purple-300" /> Track Status
                       </Button>
@@ -230,13 +230,13 @@ export default function Navbar() {
                   <Button
                     variant="ghost"
                     onClick={() => { logout(); navigate('/'); setMobileOpen(false); }}
-                    className="justify-center bg-red-950/60 hover:bg-red-950 text-red-200 hover:text-white border border-red-800/50 mt-1 h-10 font-bold text-xs rounded-lg"
+                    className="justify-center bg-red-950/70 hover:bg-red-950 text-red-200 hover:text-white border border-red-800/60 mt-1 h-10 font-bold text-xs rounded-lg"
                   >
                     <LogOut className="mr-2 h-4 w-4" /> Sign Out
                   </Button>
                 </>
               ) : (
-                <div className="flex flex-col gap-2 pt-1">
+                <div className="flex flex-col gap-2.5 pt-1">
                   <Button
                     onClick={() => { navigate('/login'); setMobileOpen(false); }}
                     className="w-full bg-white/15 hover:bg-white/25 text-white font-bold h-11 rounded-xl text-sm"

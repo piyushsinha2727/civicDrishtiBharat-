@@ -240,31 +240,31 @@ export default function CitizenDashboard() {
         <DashboardSidebar />
         <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-y-auto hide-scrollbar">
 
-          {/* Attactive Hero Banner inside Dashboard */}
-          <div className="relative mb-8 overflow-hidden rounded-2xl border border-primary/20 bg-background shadow-elevated h-[200px] lg:h-[240px] flex items-center group">
-            <img src={heroImage} alt="City Skyline" className="absolute inset-0 h-full w-full object-cover opacity-90 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" />
-            <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/60 to-transparent/10 pointer-events-none" />
-            <div className="relative z-10 px-6 lg:px-10 w-full max-w-2xl">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <div className="inline-flex items-center gap-1.5 px-4 py-1.5 mb-5 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-black uppercase tracking-widest backdrop-blur-md shadow-sm">
-                  <Sparkles className="h-4 w-4" />
-                  Real-World AI Enabled
-                </div>
-                <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-foreground/95 mb-4 drop-shadow-sm">
-                  Citizen <span className="text-gradient-primary font-black drop-shadow-sm">Command Center</span>
-                </h1>
-                <p className="text-base lg:text-lg text-foreground/80 font-bold leading-relaxed max-w-xl drop-shadow-sm">
-                  Upload photos of civic issues. Our Vision AI accurately detects, classifies, and filters irrelevant images instantly for rapid city resolution.
-                </p>
-              </motion.div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 items-start">
+          <div className="grid grid-cols-1 gap-6 items-start">
 
             {/* CASE 1: DASHBOARD OVERVIEW */}
             {activeTab === 'dashboard' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                
+                {/* Hero Banner inside Dashboard Tab Only */}
+                <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-background shadow-elevated p-5 sm:p-8 flex items-center group">
+                  <img src={heroImage} alt="City Skyline" className="absolute inset-0 h-full w-full object-cover opacity-90 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/75 to-transparent pointer-events-none" />
+                  <div className="relative z-10 w-full max-w-xl">
+                    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-3 rounded-full bg-primary/20 border border-primary/30 text-primary text-[10px] sm:text-xs font-black uppercase tracking-widest backdrop-blur-md">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Real-World AI Enabled
+                      </div>
+                      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-foreground mb-2 drop-shadow-sm">
+                        Citizen <span className="text-gradient-primary font-black">Command Center</span>
+                      </h1>
+                      <p className="text-xs sm:text-sm text-foreground/80 font-bold leading-relaxed drop-shadow-sm">
+                        Upload photos of civic issues. Our Vision AI accurately detects, classifies, and filters irrelevant images instantly for rapid city resolution.
+                      </p>
+                    </motion.div>
+                  </div>
+                </div>
                 {/* Stats Cards - inside Dashboard section */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   <Card className="glass-panel border-border/50 shadow-elevated">

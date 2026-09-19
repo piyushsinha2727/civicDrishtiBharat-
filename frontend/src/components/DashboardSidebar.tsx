@@ -97,7 +97,7 @@ export default function DashboardSidebar() {
   return (
     <>
       {/* Mobile Top Navigation Pills Bar (< lg) */}
-      <div className="block lg:hidden w-full bg-card/95 backdrop-blur-md border-b border-border/60 py-2.5 px-3 sticky top-16 z-40 shadow-sm">
+      <div className="block lg:hidden w-full bg-card/95 backdrop-blur-md border-b border-border/60 py-2 px-3 sticky top-14 z-40 shadow-sm">
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
           {menuItems.map((item, index) => {
             const active = isItemActive(item.action);
