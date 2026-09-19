@@ -68,14 +68,31 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Auto MongoDB connection middleware for Serverless environment (Vercel)
+app.use(async (req, res, next) => {
+    try {
+        if (mongoose.connection.readyState !== 1) {
+            await connectDB();
+        }
+        next();
+    } catch (err) {
+        console.error("Database connection failure in middleware:", err);
+        res.status(500).json({ error: "Database connection failure", message: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 
-console.log("Starting server initialization...");
-connectDB().then(() => {
-    console.log("Database connected successfully. Starting server...");
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log(`🚀 Server running on port ${PORT}`);
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    console.log("Starting server initialization...");
+    connectDB().then(() => {
+        console.log("Database connected successfully. Starting server...");
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+        });
+    }).catch(err => {
+        console.error("Startup error:", err);
     });
-}).catch(err => {
-    console.error("Startup error:", err);
-});
+}
+
+export default app;
