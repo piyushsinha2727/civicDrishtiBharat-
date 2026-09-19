@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl, getBaseUrl } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Download, Clock, CheckCircle, XCircle, FileText, ExternalLink, Calendar, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -20,8 +21,8 @@ export default function LeaveStatus() {
 
   const fetchLeaves = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/leave/status/${user?._id || user?.id}`);
-      const data = await res.json();
+      const res = await fetch(getApiUrl(`/leave/status/${user?._id || user?.id}`));
+      const data = await res.text().then(t => { try { return t ? JSON.parse(t) : []; } catch { return []; } });
       setLeaves(data);
     } catch (err) {
       console.error(err);
@@ -32,7 +33,7 @@ export default function LeaveStatus() {
 
   const handleDownload = (type: 'pdf' | 'jpg', certUrl: string) => {
     // In a real app, this would trigger a download. Here we open in new tab.
-    const url = `${import.meta.env.VITE_API_BASE_URL}${certUrl}`;
+    const url = `${getBaseUrl()}${certUrl}`;
     window.open(url, '_blank');
   };
 

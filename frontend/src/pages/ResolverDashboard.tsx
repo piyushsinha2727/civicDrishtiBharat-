@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl, getBaseUrl } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wrench, CheckCircle, Clock, MapPin, Upload, Camera, AlertTriangle, Hash, ShieldAlert, MessageSquare, Info, FileText, Download, Send, ClipboardCheck, XCircle, RotateCcw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -40,8 +41,8 @@ export default function ResolverDashboard() {
     try {
       const userId = user?._id || user?.id;
       if (!userId) return;
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints?engineer_id=${userId}`);
-      const data = await res.json();
+      const res = await fetch(getApiUrl(`/complaints?engineer_id=${userId}`));
+      const data = await res.text().then(t => { try { return t ? JSON.parse(t) : []; } catch { return []; } });
       setTasks(data);
     } catch (err) {
       console.error(err);
@@ -54,8 +55,8 @@ export default function ResolverDashboard() {
     try {
       const userId = user?._id || user?.id;
       if (!userId) return;
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints/notices/${userId}`);
-      const data = await res.json();
+      const res = await fetch(getApiUrl(`/complaints/notices/${userId}`));
+      const data = await res.text().then(t => { try { return t ? JSON.parse(t) : []; } catch { return []; } });
       setNotices(data);
     } catch (err) {
       console.error("Failed to fetch notices", err);
@@ -103,7 +104,7 @@ export default function ResolverDashboard() {
         after_image: afterImagePreview
       };
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints/resolve`, {
+      const res = await fetch(getApiUrl('/complaints/resolve'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -130,7 +131,7 @@ export default function ResolverDashboard() {
 
     setSubmittingNotice(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/complaints/notices/${selectedNotice._id}/respond`, {
+      const res = await fetch(getApiUrl(`/complaints/notices/${selectedNotice._id}/respond`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -160,7 +161,7 @@ export default function ResolverDashboard() {
     setSubmittingAppeal(true);
     try {
       const engineerId = user?._id || user?.id;
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/engineers/suspension/appeal`, {
+      const res = await fetch(getApiUrl('/engineers/suspension/appeal'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -215,7 +216,7 @@ export default function ResolverDashboard() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => user.disciplinary_notice_url && window.open(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api','')}${user.disciplinary_notice_url}`)}
+                    onClick={() => user.disciplinary_notice_url && window.open(`${getBaseUrl()}${user.disciplinary_notice_url}`)}
                     className="flex-1 h-10 border-destructive/30 text-destructive font-black text-[10px] uppercase tracking-wider hover:bg-destructive/10"
                   >
                     <Download className="h-3 w-3 mr-1" /> Notice (JPG)
@@ -223,7 +224,7 @@ export default function ResolverDashboard() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => user.suspension_letter && window.open(`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api','')}${user.suspension_letter}`)}
+                    onClick={() => user.suspension_letter && window.open(`${getBaseUrl()}${user.suspension_letter}`)}
                     className="flex-1 h-10 border-destructive/30 text-destructive font-black text-[10px] uppercase tracking-wider hover:bg-destructive/10"
                   >
                     <FileText className="h-3 w-3 mr-1" /> Order (PDF)
@@ -455,7 +456,7 @@ export default function ResolverDashboard() {
                     <Button
                       className="w-full h-12 bg-destructive hover:bg-destructive/90 text-white font-black uppercase tracking-wider text-sm"
                       onClick={() => {
-                        const base = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+                        const base = getBaseUrl();
                         window.open(`${base}${user.suspension_letter}`, '_blank');
                       }}
                     >
@@ -526,7 +527,7 @@ export default function ResolverDashboard() {
                                   size="sm"
                                   className="w-full h-8 text-[10px] border-destructive/40 text-destructive hover:bg-destructive/10 font-bold"
                                   onClick={() => {
-                                    const base = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+                                    const base = getBaseUrl();
                                     window.open(`${base}${notice.suspension_letter}`, '_blank');
                                   }}
                                 >

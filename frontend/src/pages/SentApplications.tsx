@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getApiUrl } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, MapPin, Clock, AlertCircle, CheckCircle, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,8 +34,8 @@ export default function SentApplications() {
 
     const fetchComplaints = useCallback(async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints?user_id=${user?._id || user?.id}`);
-            const data = await res.json();
+            const res = await fetch(getApiUrl(`/complaints?user_id=${user?._id || user?.id}`));
+            const data = await res.text().then(t => { try { return t ? JSON.parse(t) : []; } catch { return []; } });
             setComplaints(data);
         } catch (err) {
             console.error(err);
@@ -52,10 +53,10 @@ export default function SentApplications() {
         if (!window.confirm(`Are you sure you want to withdraw and delete complaint ${ref}?`)) return;
         
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints/${id}`, {
+            const res = await fetch(getApiUrl(`/complaints/${id}`), {
                 method: 'DELETE',
             });
-            const data = await res.json();
+            const data = await res.text().then(t => { try { return t ? JSON.parse(t) : {}; } catch { return {}; } });
             if (!res.ok) throw new Error(data.error || "Delete failed");
             toast.success("Complaint withdrawn successfully");
             fetchComplaints();

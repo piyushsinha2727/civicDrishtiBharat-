@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl, getBaseUrl } from '@/lib/api';
 import { 
   Shield, Users, AlertTriangle, CheckCircle, 
   Search, MoreVertical, Eye, FileText,
@@ -107,8 +108,7 @@ export default function DisciplineModule() {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${apiUrl}/engineers/discipline`);
+      const res = await fetch(getApiUrl('/engineers/discipline'));
       if (!res.ok) throw new Error("Failed to load compliance data");
       const result = await res.json();
       setData(result);
@@ -123,8 +123,7 @@ export default function DisciplineModule() {
   const fetchLogs = async (id: string) => {
     setLoadingLogs(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${apiUrl}/engineers/discipline/${id}/logs`);
+      const res = await fetch(getApiUrl(`/engineers/discipline/${id}/logs`));
       const result = await res.json();
       setLogs(result);
     } catch (err) {
@@ -136,8 +135,7 @@ export default function DisciplineModule() {
 
   const handleAction = async (engineerId: string, action: string) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${apiUrl}/engineers/discipline/action`, {
+      const res = await fetch(getApiUrl('/engineers/discipline/action'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ engineerId, action, reason: "Manual admin action" })
@@ -153,8 +151,7 @@ export default function DisciplineModule() {
   const handleReviewAppeal = async (engineerId: string, action: 'approve' | 'reject') => {
     setReviewingAppeal(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${apiUrl}/engineers/suspension/appeal/${engineerId}/review`, {
+      const res = await fetch(getApiUrl(`/engineers/suspension/appeal/${engineerId}/review`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, admin_notes: appealNotes })
@@ -179,8 +176,7 @@ export default function DisciplineModule() {
     if (!window.confirm('Are you sure you want to revoke this suspension? The engineer will immediately regain full access.')) return;
     setRevokingSuspension(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${apiUrl}/engineers/${engineerId}/revoke-suspension`, {
+      const res = await fetch(getApiUrl(`/engineers/${engineerId}/revoke-suspension`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: revokeSuspensionReason || 'Suspension revoked by administrator.' })
@@ -207,8 +203,7 @@ export default function DisciplineModule() {
   // 'reject' path: Generates 30-day suspension PDF, forces admin to view it, then locks the engineer account.
   const handleReviewNotice = async (noticeId: string, action: 'accept' | 'reject', notes: string, days: number) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${apiUrl}/complaints/notices/${noticeId}/review`, {
+      const res = await fetch(getApiUrl(`/complaints/notices/${noticeId}/review`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, notes, suspension_days: days })
@@ -223,7 +218,7 @@ export default function DisciplineModule() {
       } else {
         // Store the PDF URL from the response for the mandatory view step
         const pdfPath = data.suspension_letter;
-        const backendBase = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+        const backendBase = getBaseUrl();
         setSuspensionPdfUrl(`${backendBase}${pdfPath}`);
         setPendingRejectionNoticeId(noticeId);
         toast.warning("⚠️ Suspension order generated. You MUST review the PDF report before confirming.");

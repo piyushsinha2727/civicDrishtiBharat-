@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getApiUrl, getBaseUrl } from '@/lib/api';
 import { useLocation, useNavigate, Navigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -49,7 +50,7 @@ export default function FileComplaint() {
                 image_url: analysis.imageBase64 || analysis.imageUrl,
             };
 
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/complaints`, {
+            const res = await fetch(getApiUrl('/complaints'), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -184,7 +185,7 @@ export default function FileComplaint() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <Button asChild className="h-14 font-black shadow-lg">
                                             <a 
-                                                href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')}${submittedData.slipPdf}`} 
+                                                href={`${getBaseUrl()}${submittedData.slipPdf}`} 
                                                 download 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"
@@ -194,7 +195,7 @@ export default function FileComplaint() {
                                         </Button>
                                         <Button asChild variant="outline" className="h-14 font-black border-emerald-500/20 hover:bg-emerald-500/5">
                                             <a 
-                                                href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')}${submittedData.slipJpg}`} 
+                                                href={`${getBaseUrl()}${submittedData.slipJpg}`} 
                                                 download 
                                                 target="_blank" 
                                                 rel="noopener noreferrer"

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { Clock, Calendar, CheckCircle, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -20,7 +21,7 @@ export function LeaveRequestsList({ onStatusChange }: LeaveRequestsListProps) {
 
   const fetchLeaveRequests = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/leave/all`);
+      const res = await fetch(getApiUrl('/leave/all'));
       const data = await res.json();
       setLeaveRequests(data);
     } catch (err) {
@@ -34,7 +35,7 @@ export function LeaveRequestsList({ onStatusChange }: LeaveRequestsListProps) {
     const admin_message = window.prompt(`Enter message for engineer (optional):`, status === 'Approved' ? 'Enjoy your leave.' : 'Insufficient bandwidth to approve at this time.');
     
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/leave/approve/${id}`, {
+      const res = await fetch(getApiUrl(`/leave/approve/${id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

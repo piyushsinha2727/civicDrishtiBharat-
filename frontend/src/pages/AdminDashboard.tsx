@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl, getBaseUrl } from '@/lib/api';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, AlertTriangle, CheckCircle, Clock, MapPin, Activity, Shield, Hash, Search, BarChart3, Map as MapIcon, TrendingUp, AlertOctagon, FileText, Trash2, Calendar, X, Edit, UserCheck } from 'lucide-react';
@@ -75,13 +76,14 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     try {
       const [compRes, engRes, noticeRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/complaints`),
-        fetch(`${import.meta.env.VITE_API_URL}/engineers`),
-        fetch(`${import.meta.env.VITE_API_URL}/complaints/notices/all`) // New endpoint needed
+        fetch(getApiUrl('/complaints')),
+        fetch(getApiUrl('/engineers')),
+        fetch(getApiUrl('/complaints/notices/all'))
       ]);
-      const compData = await compRes.json();
-      const engData = await engRes.json();
-      const noticeData = await noticeRes.json();
+      const parseRes = async (r: Response) => { const t = await r.text(); try { return t ? JSON.parse(t) : []; } catch { return []; } };
+      const compData = await parseRes(compRes);
+      const engData = await parseRes(engRes);
+      const noticeData = await parseRes(noticeRes);
       setComplaints(compData);
       setEngineers(engData);
       setNotices(noticeData);
@@ -98,7 +100,7 @@ export default function AdminDashboard() {
     
     setSubmittingReview(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints/notices/${selectedNotice._id}/review`, {
+      const res = await fetch(getApiUrl(`/complaints/notices/${selectedNotice._id}/review`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -134,7 +136,7 @@ export default function AdminDashboard() {
 
   const handleAssign = async (engineerId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/complaints/assign`, {
+      const response = await fetch(getApiUrl('/complaints/assign'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -158,7 +160,7 @@ export default function AdminDashboard() {
     if (!window.confirm(`Are you sure you want to remove engineer ${name}? This action cannot be undone.`)) return;
     
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/engineers/${id}`, { method: 'DELETE' });
+      const res = await fetch(getApiUrl(`/engineers/${id}`), { method: 'DELETE' });
       if (!res.ok) throw new Error("Failed to remove engineer");
       toast.success("Engineer record deleted");
       fetchData();
@@ -169,7 +171,7 @@ export default function AdminDashboard() {
 
   const handleReturnToWork = async (id: string, name: string) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/engineers/${id}/return-to-work`, {
+      const res = await fetch(getApiUrl(`/engineers/${id}/return-to-work`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -186,7 +188,7 @@ export default function AdminDashboard() {
   const handleCloseComplaint = async (complaintId: string) => {
     if (!window.confirm("Are you sure you want to close this complaint? This will free the assigned engineer.")) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints/${complaintId}/close`, { method: 'POST' });
+      const res = await fetch(getApiUrl(`/complaints/${complaintId}/close`), { method: 'POST' });
       if (!res.ok) throw new Error("Close protocol failed");
       toast.success("Complaint closed and engineer released");
       fetchData();
@@ -198,7 +200,7 @@ export default function AdminDashboard() {
   const handleSendNotice = async () => {
     if (!noticeMessage.trim()) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints/notice`, {
+      const res = await fetch(getApiUrl('/complaints/notice'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -686,7 +688,7 @@ export default function AdminDashboard() {
 
             {/* 4. FLOOD RISK PREDICTOR */}
             {activeTab === 'flood-risk' && (
-              <FloodRiskModule apiUrl={import.meta.env.VITE_API_URL} />
+              <FloodRiskModule apiUrl={getApiUrl('')} />
             )}
 
             {/* 5. LEAVE REQUESTS MANAGEMENT */}

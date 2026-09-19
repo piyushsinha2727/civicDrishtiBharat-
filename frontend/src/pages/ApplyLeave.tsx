@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getApiUrl } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { Calendar, FileText, Upload, Send, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -41,7 +42,7 @@ export default function ApplyLeave() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/leave/apply`, {
+      const res = await fetch(getApiUrl('/leave/apply'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

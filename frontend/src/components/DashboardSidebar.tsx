@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '@/lib/api';
 import { User, FileText, Edit, Key, LogOut, LayoutDashboard, Building2, Shield, Users, Activity, Map, BarChart3, Wrench, Calendar, ClipboardCheck, Bell, ShieldOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -14,10 +15,9 @@ export default function DashboardSidebar() {
   useEffect(() => {
     const checkDisciplineNotices = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-        const res = await fetch(`${apiUrl}/complaints/notices/all`);
+        const res = await fetch(getApiUrl('/complaints/notices/all'));
         if (res.ok) {
-          const notices = await res.json();
+          const notices = await res.text().then(t => { try { return t ? JSON.parse(t) : []; } catch { return []; } });
           const pending = Array.isArray(notices) && notices.some(n => 
             n.responded && (n.admin_decision === 'Pending' || !n.admin_decision || n.admin_decision === null)
           );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '@/lib/api';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, MapPin, Search, AlertCircle, CheckCircle, Clock, Map, Sparkles, Navigation, FileText, ArrowRight, Star, ThumbsUp, ThumbsDown, Camera, Brain, AlertTriangle, Trash2 } from 'lucide-react';
@@ -77,8 +78,8 @@ export default function CitizenDashboard() {
 
   const fetchComplaints = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints?user_id=${user?._id || user?.id}`);
-      const data = await res.json();
+      const res = await fetch(getApiUrl(`/complaints?user_id=${user?._id || user?.id}`));
+      const data = await res.text().then(t => { try { return t ? JSON.parse(t) : []; } catch { return []; } });
       setComplaints(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
@@ -151,7 +152,7 @@ export default function CitizenDashboard() {
         image_url: analysis.imageBase64,
       };
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints`, {
+      const res = await fetch(getApiUrl('/complaints'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -178,7 +179,7 @@ export default function CitizenDashboard() {
 
   const submitFeedback = async (satisfied: boolean) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints/feedback`, {
+      const res = await fetch(getApiUrl('/complaints/feedback'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -201,7 +202,7 @@ export default function CitizenDashboard() {
     if (!window.confirm(`Are you sure you want to withdraw and delete complaint ${ref}?`)) return;
     
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints/${id}`, {
+      const res = await fetch(getApiUrl(`/complaints/${id}`), {
         method: 'DELETE',
       });
       const data = await res.json();

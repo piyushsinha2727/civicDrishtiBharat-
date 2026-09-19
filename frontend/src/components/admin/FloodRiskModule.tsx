@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl, getBaseUrl } from '@/lib/api';
 import { MapContainer, TileLayer, Circle, Popup } from 'react-leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -69,7 +70,7 @@ export default function FloodRiskModule({ apiUrl }: { apiUrl: string }) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/flood-risk/analysis`);
+      const res = await fetch(getApiUrl('/flood-risk/analysis'));
       if (!res.ok) throw new Error('Failed to load flood risk data');
       const json = await res.json();
       setData(json);
@@ -88,7 +89,7 @@ export default function FloodRiskModule({ apiUrl }: { apiUrl: string }) {
     if (!selectedHotspot) return;
     setGeneratingPdf(true);
     try {
-      const res = await fetch(`${apiUrl}/flood-risk/advisory`, {
+      const res = await fetch(getApiUrl('/flood-risk/advisory'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hotspot: selectedHotspot }),
@@ -103,7 +104,7 @@ export default function FloodRiskModule({ apiUrl }: { apiUrl: string }) {
       if (!data.downloadUrl) throw new Error('No download URL returned');
 
       // Open the PDF file URL directly — Chrome downloads it with correct filename
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const BASE_URL = getBaseUrl();
       const fullUrl = `${BASE_URL}${data.downloadUrl}`;
 
       // Use anchor click with direct URL — no blob, no UUID filenames

@@ -28,6 +28,20 @@ app.use((req, res, next) => {
     next();
 });
 
+// Auto MongoDB connection middleware for Serverless environment (Vercel)
+// MUST be before routes so DB is connected before any query
+app.use(async (req, res, next) => {
+    try {
+        if (mongoose.connection.readyState !== 1) {
+            await connectDB();
+        }
+        next();
+    } catch (err) {
+        console.error("Database connection failure in middleware:", err);
+        res.status(500).json({ error: "Database connection failure", message: err.message });
+    }
+});
+
 // Root route
 app.get("/", (req, res) => {
     console.log("Root route hit!");
@@ -68,18 +82,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Auto MongoDB connection middleware for Serverless environment (Vercel)
-app.use(async (req, res, next) => {
-    try {
-        if (mongoose.connection.readyState !== 1) {
-            await connectDB();
-        }
-        next();
-    } catch (err) {
-        console.error("Database connection failure in middleware:", err);
-        res.status(500).json({ error: "Database connection failure", message: err.message });
-    }
-});
+
 
 const PORT = process.env.PORT || 5000;
 

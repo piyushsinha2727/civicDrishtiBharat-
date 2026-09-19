@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getApiUrl } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -76,7 +77,7 @@ export default function Profile() {
     const handleProfileSave = async () => {
         try {
             setSavingProfile(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+            const response = await fetch(getApiUrl('/auth/profile'), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: user._id || user.id, ...formData })
@@ -108,7 +109,7 @@ export default function Profile() {
             }
 
             setSavingSecurity(true);
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+            const response = await fetch(getApiUrl('/auth/profile'), {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

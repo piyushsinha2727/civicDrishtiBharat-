@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Edit, Save, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,7 +25,7 @@ export default function ModifyApplication() {
 
     const fetchComplaints = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints?user_id=${user?.id}`);
+            const res = await fetch(getApiUrl(`/complaints?user_id=${user?.id}`));
             const data = await res.json();
             setComplaints(data.filter((c: any) => c.status === 'New'));
         } catch (err) {
@@ -42,7 +43,7 @@ export default function ModifyApplication() {
     const handleSave = async (id: string) => {
         setSaving(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/complaints/${id}`, {
+            const res = await fetch(getApiUrl(`/complaints/${id}`), {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ description: editDesc })

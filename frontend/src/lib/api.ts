@@ -1,16 +1,50 @@
+/**
+ * Centralized API URL helper with auto-detection for Vercel vs local development.
+ * On Vercel: uses origin-relative "/api" (no env var needed).
+ * On local: uses VITE_API_URL or defaults to "http://localhost:5000/api".
+ */
 export const getApiUrl = (path: string): string => {
-  let envUrl = import.meta.env.VITE_API_URL;
-  if (!envUrl || envUrl === "undefined" || envUrl.includes("undefined")) {
-    envUrl = "http://localhost:5000/api";
+  let baseUrl: string;
+
+  const envUrl = import.meta.env.VITE_API_URL;
+
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // Production (Vercel): use origin-relative URL
+    baseUrl = `${window.location.origin}/api`;
+  } else if (envUrl && envUrl !== "undefined" && !envUrl.includes("undefined")) {
+    // Local dev with env var set
+    baseUrl = envUrl.replace(/\/$/, "");
+    if (!baseUrl.endsWith("/api")) {
+      baseUrl = `${baseUrl}/api`;
+    }
+  } else {
+    // Local dev fallback
+    baseUrl = "http://localhost:5000/api";
   }
-  let baseUrl = envUrl.replace(/\/$/, "");
-  if (!baseUrl.endsWith("/api")) {
-    baseUrl = `${baseUrl}/api`;
-  }
+
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   return `${baseUrl}${cleanPath}`;
 };
 
+/**
+ * Returns the base server URL (without /api suffix).
+ * Used for static file URLs like document downloads.
+ */
+export const getBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return window.location.origin;
+  }
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && envUrl !== "undefined" && !envUrl.includes("undefined")) {
+    return envUrl.replace(/\/api\/?$/, "");
+  }
+  return "http://localhost:5000";
+};
+
+/**
+ * Safe fetch + JSON parse. Never crashes on non-JSON responses.
+ * Returns { ok, status, data?, error? }.
+ */
 export async function safeFetchJson<T = any>(
   url: string,
   options?: RequestInit

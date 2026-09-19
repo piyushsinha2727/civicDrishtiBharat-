@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getApiUrl } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Map as MapIcon, AlertTriangle, 
@@ -64,8 +65,7 @@ export default function HeatmapModule() {
   const { data, isLoading, error, refetch } = useQuery<HeatmapData>({
     queryKey: ['heatmap', range],
     queryFn: async () => {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${apiUrl}/heatmap?range=${range}`);
+      const res = await fetch(getApiUrl(`/heatmap?range=${range}`));
       if (!res.ok) throw new Error('Failed to synchronize with city geospatial data');
       return res.json();
     }
@@ -73,8 +73,7 @@ export default function HeatmapModule() {
 
   const handleDispatch = async (zone: HeatmapZone) => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${apiUrl}/heatmap/dispatch`, {
+      const res = await fetch(getApiUrl('/heatmap/dispatch'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
