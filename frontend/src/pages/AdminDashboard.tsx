@@ -267,10 +267,10 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <div className="flex-1 flex overflow-hidden w-full max-w-[1400px] mx-auto">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden w-full max-w-[1400px] mx-auto">
         <DashboardSidebar />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 hide-scrollbar">
+        <main className="flex-1 w-full overflow-y-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 hide-scrollbar">
             
             {/* 1. COMMAND CENTRE (COMPLAINT MANAGEMENT) */}
             {activeTab === 'command-center' && (

@@ -40,9 +40,9 @@ export default function LeaveStatus() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <div className="flex flex-1 overflow-hidden w-full max-w-[1400px] mx-auto">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden w-full max-w-[1400px] mx-auto">
         <DashboardSidebar />
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">

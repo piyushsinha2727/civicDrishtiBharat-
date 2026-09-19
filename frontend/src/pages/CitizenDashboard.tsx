@@ -236,9 +236,9 @@ export default function CitizenDashboard() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <div className="flex flex-1 overflow-hidden w-full max-w-[1400px] mx-auto">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden w-full max-w-[1400px] mx-auto">
         <DashboardSidebar />
-        <main className="flex-1 container max-w-6xl py-8 overflow-y-auto hide-scrollbar">
+        <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-y-auto hide-scrollbar">
 
           {/* Attactive Hero Banner inside Dashboard */}
           <div className="relative mb-8 overflow-hidden rounded-2xl border border-primary/20 bg-background shadow-elevated h-[200px] lg:h-[240px] flex items-center group">

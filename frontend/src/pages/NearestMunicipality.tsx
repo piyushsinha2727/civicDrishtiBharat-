@@ -84,9 +84,9 @@ export default function NearestMunicipality() {
     return (
         <div className="min-h-screen bg-background flex flex-col">
             <Navbar />
-            <div className="flex flex-1 overflow-hidden w-full max-w-[1400px] mx-auto">
+            <div className="flex flex-col lg:flex-row flex-1 overflow-hidden w-full max-w-[1400px] mx-auto">
                 <DashboardSidebar />
-                <main className="flex-1 container max-w-5xl py-8 overflow-y-auto">
+                <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-y-auto">
                     <div className="mb-8">
                         <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
                             <Building2 className="h-8 w-8 text-emerald-500" /> Nearest Municipality Locator

@@ -186,7 +186,7 @@ export default function ResolverDashboard() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      <div className="flex flex-1 overflow-hidden w-full max-w-[1400px] mx-auto">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden w-full max-w-[1400px] mx-auto">
         <DashboardSidebar />
         
         {user?.is_suspended && (

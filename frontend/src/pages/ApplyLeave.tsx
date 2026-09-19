@@ -65,9 +65,9 @@ export default function ApplyLeave() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <div className="flex flex-1 overflow-hidden w-full max-w-[1400px] mx-auto">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden w-full max-w-[1400px] mx-auto">
         <DashboardSidebar />
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main className="flex-1 w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-y-auto">
           <div className="max-w-2xl mx-auto">
             <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6 gap-2 font-bold uppercase text-xs">
               <ArrowLeft className="h-4 w-4" /> Go Back
