@@ -96,7 +96,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const fbData = fbText ? JSON.parse(fbText) : {};
         if (fallbackRes.ok) return fbData;
       }
-      throw new Error(data.message || data.error || `Request failed with status ${res.status}`);
+      const err: any = new Error(data.message || data.error || `Request failed with status ${res.status}`);
+      err.data = data;
+      err.status = res.status;
+      throw err;
     }
 
     return data;

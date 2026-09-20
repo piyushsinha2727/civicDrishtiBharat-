@@ -1,5 +1,6 @@
 import express from "express";
 import User from "../models/User.js";
+import Notice from "../models/Notice.js";
 import OTP from "../models/OTP.js";
 import { sendOTP } from "../utils/mailer.js";
 
@@ -96,14 +97,35 @@ router.post("/login", async (req, res) => {
         if (!user) return res.status(401).json({ message: "Invalid email or password" });
 
         // --- Disciplinary Gate: Block login if account is disabled due to suspension ---
-        if (user.login_disabled) {
+        if (user.login_disabled || user.is_suspended) {
+            let suspensionLetter = user.suspension_letter;
+            let disciplinaryNoticeUrl = user.disciplinary_notice_url;
+
+            if (!suspensionLetter) {
+                const latestNotice = await Notice.findOne({ 
+                    engineer_id: user._id, 
+                    suspension_letter: { $ne: null } 
+                }).sort({ created_at: -1 });
+                if (latestNotice) {
+                    suspensionLetter = latestNotice.suspension_letter;
+                    disciplinaryNoticeUrl = disciplinaryNoticeUrl || latestNotice.disciplinary_notice_url;
+                }
+            }
+
             const untilDate = user.suspension_until
                 ? new Date(user.suspension_until).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
-                : 'further notice';
+                : 'further administrative notice';
+
             return res.status(403).json({
-                message: `⛔ Account Suspended. Your account has been disabled due to disciplinary action. You cannot log in until ${untilDate}. Contact your administrator with your reference suspension order.`,
+                message: `⛔ Account Suspended. Your account access has been revoked due to official disciplinary action. Suspended until: ${untilDate}.`,
                 is_suspended: true,
-                suspension_letter: user.suspension_letter
+                suspension_letter: suspensionLetter,
+                disciplinary_notice_url: disciplinaryNoticeUrl,
+                suspension_until: user.suspension_until,
+                engineer_id: user._id,
+                engineer_name: user.name,
+                login_disabled_reason: user.login_disabled_reason || "Disciplinary penalty enforced by Municipal Command Center.",
+                suspension_appeal: user.suspension_appeal || null
             });
         }
 
