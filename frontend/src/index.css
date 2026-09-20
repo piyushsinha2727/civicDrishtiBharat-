@@ -237,3 +237,24 @@
     box-shadow: var(--shadow-glow);
   }
 }
+
+/* White Calendar / Date Picker Input styling */
+.white-date-input,
+input[type="date"].white-date-input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  color-scheme: light !important;
+}
+
+.white-date-input::-webkit-calendar-picker-indicator,
+input[type="date"].white-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0) !important;
+  opacity: 0.85;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.white-date-input::-webkit-calendar-picker-indicator:hover,
+input[type="date"].white-date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}

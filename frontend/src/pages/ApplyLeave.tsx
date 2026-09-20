@@ -86,23 +86,27 @@ export default function ApplyLeave() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-muted-foreground">From Date</label>
+                      <label className="text-[11px] font-black uppercase text-muted-foreground flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-primary" /> From Date
+                      </label>
                       <Input 
                         type="date" 
                         required
-                        className="bg-background/50 border-border/50 h-12 font-bold"
+                        className="white-date-input bg-white text-slate-900 border-slate-300 dark:bg-white dark:text-slate-900 dark:border-slate-300 h-12 font-bold shadow-sm rounded-xl px-4 focus:ring-2 focus:ring-primary focus:border-primary transition-all cursor-pointer"
                         value={formData.duration_from}
                         onChange={(e) => setFormData({ ...formData, duration_from: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase text-muted-foreground">To Date</label>
+                      <label className="text-[11px] font-black uppercase text-muted-foreground flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-primary" /> To Date
+                      </label>
                       <Input 
                         type="date" 
                         required
-                        className="bg-background/50 border-border/50 h-12 font-bold"
+                        className="white-date-input bg-white text-slate-900 border-slate-300 dark:bg-white dark:text-slate-900 dark:border-slate-300 h-12 font-bold shadow-sm rounded-xl px-4 focus:ring-2 focus:ring-primary focus:border-primary transition-all cursor-pointer"
                         value={formData.duration_to}
                         onChange={(e) => setFormData({ ...formData, duration_to: e.target.value })}
                       />

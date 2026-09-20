@@ -195,8 +195,24 @@ router.patch("/:id/return-to-work", async (req, res) => {
     }
 });
 
-// REVOKE SUSPENSION (Admin directly lifts suspension, bypassing appeal flow)
-router.post("/:id/revoke-suspension", async (req, res) => {
+// GET SINGLE ENGINEER PROFILE / STATUS
+router.get("/profile/:id", async (req, res) => {
+    try {
+        const engineer = await User.findById(req.params.id)
+            .select("-password")
+            .lean();
+        if (!engineer) return res.status(404).json({ error: "Engineer not found" });
+        res.json({
+            ...engineer,
+            id: engineer._id
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// REVOKE SUSPENSION (Manual Admin Action)
+router.post("/discipline/:id/revoke-suspension", async (req, res) => {
     try {
         const { reason } = req.body;
         const engineer = await User.findById(req.params.id);
@@ -205,6 +221,7 @@ router.post("/:id/revoke-suspension", async (req, res) => {
 
         await User.findByIdAndUpdate(req.params.id, {
             is_suspended: false,
+            suspension_letter: null,
             suspension_until: null,
             login_disabled: false,
             login_disabled_reason: null,
@@ -274,6 +291,7 @@ router.post("/suspension/appeal/:engineer_id/review", async (req, res) => {
             // Lift the suspension entirely
             await User.findByIdAndUpdate(req.params.engineer_id, {
                 is_suspended: false,
+                suspension_letter: null,
                 suspension_until: null,
                 login_disabled: false,
                 login_disabled_reason: null,
@@ -284,13 +302,13 @@ router.post("/suspension/appeal/:engineer_id/review", async (req, res) => {
             });
             res.json({ message: "Appeal approved. Suspension has been lifted. Engineer account restored." });
         } else {
-            // Reject appeal — suspension remains
+            // Reject the appeal — keep suspension
             await User.findByIdAndUpdate(req.params.engineer_id, {
                 "suspension_appeal.status": "Rejected",
-                "suspension_appeal.admin_notes": admin_notes || "Appeal rejected. Suspension remains in effect.",
+                "suspension_appeal.admin_notes": admin_notes || "Appeal rejected after review.",
                 "suspension_appeal.reviewed_at": new Date()
             });
-            res.json({ message: "Appeal rejected. Suspension remains in effect until the original end date." });
+            res.json({ message: "Appeal rejected. Suspension remains active." });
         }
     } catch (err) {
         res.status(500).json({ error: err.message });

@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 export default function ResolverDashboard() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +36,22 @@ export default function ResolverDashboard() {
   const [appealDocument, setAppealDocument] = useState<string | null>(null);
   const [submittingAppeal, setSubmittingAppeal] = useState(false);
   const [appealSubmitted, setAppealSubmitted] = useState(false);
+
+  const fetchProfile = async () => {
+    try {
+      const userId = user?._id || user?.id;
+      if (!userId) return;
+      const res = await fetch(getApiUrl(`/engineers/profile/${userId}`));
+      if (res.ok) {
+        const freshUser = await res.json();
+        if (freshUser && freshUser.is_suspended !== user?.is_suspended) {
+          updateUser({ ...user, ...freshUser });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to sync profile status", err);
+    }
+  };
 
   const fetchTasks = async () => {
     try {
@@ -65,10 +81,11 @@ export default function ResolverDashboard() {
 
   useEffect(() => {
     if (user) {
+      fetchProfile();
       fetchTasks();
       fetchNotices();
     }
-  }, [user]);
+  }, [user?._id, user?.id]);
 
   // Mandatory Alert Trigger
   useEffect(() => {
@@ -347,7 +364,7 @@ export default function ResolverDashboard() {
             
             {/* LEFT COLUMN: OPERATIONAL GRID */}
             <div className="lg:col-span-8 space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between min-h-[36px]">
                 <h2 className="text-lg font-black uppercase text-foreground flex items-center gap-2">
                   <Wrench className="h-5 w-5 text-primary" /> Operational Task List
                 </h2>
@@ -425,47 +442,7 @@ export default function ResolverDashboard() {
             <div className="lg:col-span-4 space-y-6">
               <div className="sticky top-8 space-y-4">
 
-                {/* --- OFFICIAL SUSPENSION NOTICE CARD ---
-                    Appears ONLY when an admin has issued a suspension order PDF.
-                    Engineer must acknowledge/download the suspension letter. */}
-                {user?.suspension_letter && (
-                  <div className="p-5 rounded-2xl border-2 border-destructive bg-destructive/10 shadow-glow-destructive animate-pulse">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="h-10 w-10 rounded-full bg-destructive flex items-center justify-center shrink-0">
-                        <ShieldAlert className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-black text-destructive uppercase tracking-widest">Official Order Issued</p>
-                        <h3 className="text-lg font-black text-foreground">Account Suspended</h3>
-                      </div>
-                    </div>
-                    <p className="text-xs font-bold text-muted-foreground mb-4 leading-relaxed">
-                      A formal suspension order has been issued against your account by the CivicDrishti Bharat Administration. 
-                      Your login access has been revoked. Download the official PDF order below.
-                    </p>
-                    {/* Active Until date */}
-                    {user?.suspension_until && (
-                      <div className="p-3 bg-destructive/10 rounded-xl border border-destructive/30 mb-4">
-                        <p className="text-[10px] font-black text-destructive uppercase">Suspended Until:</p>
-                        <p className="text-sm font-black text-foreground">
-                          {new Date(user.suspension_until).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
-                        </p>
-                      </div>
-                    )}
-                    {/* Download PDF Suspension Order */}
-                    <Button
-                      className="w-full h-12 bg-destructive hover:bg-destructive/90 text-white font-black uppercase tracking-wider text-sm"
-                      onClick={() => {
-                        const base = getBaseUrl();
-                        window.open(`${base}${user.suspension_letter}`, '_blank');
-                      }}
-                    >
-                      <FileText className="mr-2 h-5 w-5" /> Download Suspension Order (PDF)
-                    </Button>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between min-h-[36px]">
                   <h2 className="text-lg font-black uppercase text-destructive flex items-center gap-2">
                     <ShieldAlert className="h-5 w-5" /> Disciplinary Action Center
                   </h2>
@@ -475,6 +452,47 @@ export default function ResolverDashboard() {
                     </Badge>
                   )}
                 </div>
+
+                {/* --- OFFICIAL SUSPENSION NOTICE CARD ---
+                    Appears ONLY when an engineer is actively suspended (is_suspended: true).
+                    When suspension is revoked (is_suspended: false), it is completely hidden. */}
+                {user?.is_suspended && user?.suspension_letter && (
+                  <div className="p-5 rounded-2xl border-2 border-destructive bg-destructive/10 shadow-glow-destructive backdrop-blur-sm">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="h-10 w-10 rounded-full bg-destructive flex items-center justify-center shrink-0 mt-0.5 shadow-md">
+                        <ShieldAlert className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-black text-destructive uppercase tracking-wider">Official Order Issued</p>
+                        <h3 className="text-base sm:text-lg font-black text-foreground leading-snug">Account Suspended</h3>
+                      </div>
+                    </div>
+                    <p className="text-xs font-medium text-muted-foreground mb-4 leading-relaxed">
+                      A formal suspension order has been issued against your account by the CivicDrishti Bharat Administration. 
+                      Your login access has been revoked. Download the official PDF order below.
+                    </p>
+                    {/* Active Until date */}
+                    {user?.suspension_until && (
+                      <div className="p-3 bg-destructive/10 rounded-xl border border-destructive/30 mb-4">
+                        <p className="text-[10px] font-black text-destructive uppercase tracking-wider">Suspended Until:</p>
+                        <p className="text-sm font-black text-foreground">
+                          {new Date(user.suspension_until).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                    )}
+                    {/* Download PDF Suspension Order */}
+                    <Button
+                      className="w-full min-h-[46px] h-auto py-2.5 px-4 bg-destructive hover:bg-destructive/90 text-white font-black uppercase text-xs tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 whitespace-normal text-center transition-all"
+                      onClick={() => {
+                        const base = getBaseUrl();
+                        window.open(`${base}${user.suspension_letter}`, '_blank');
+                      }}
+                    >
+                      <FileText className="h-4 w-4 shrink-0 text-white" />
+                      <span className="leading-tight">Download Suspension Order (PDF)</span>
+                    </Button>
+                  </div>
+                )}
 
                 <Card className="glass-strong border-destructive/20 overflow-hidden shadow-elevated">
                   <div className="p-6 bg-destructive/10 border-b border-destructive/20">
@@ -521,7 +539,7 @@ export default function ResolverDashboard() {
                               <div className="p-2 bg-success/10 rounded-lg border border-success/20 text-success text-[10px] font-bold">
                                 <CheckCircle className="h-3 w-3 inline mr-1" /> Justification Submitted
                               </div>
-                              {notice.suspension_letter && (
+                              {user?.is_suspended && notice.suspension_letter && (
                                 <Button
                                   variant="outline"
                                   size="sm"
