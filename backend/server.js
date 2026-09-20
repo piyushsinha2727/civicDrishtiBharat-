@@ -10,6 +10,7 @@ import engineerRoutes from "./routes/engineers.js";
 import leaveRoutes from "./routes/leave.js";
 import heatmapRoutes from "./routes/heatmap.js";
 import floodRiskRoutes from "./routes/floodRisk.js";
+import documentRoutes from "./routes/documents.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -68,9 +69,11 @@ app.use("/api/engineers", engineerRoutes);
 app.use("/api/leave", leaveRoutes);
 app.use("/api/heatmap", heatmapRoutes);
 app.use("/api/flood-risk", floodRiskRoutes);
+app.use("/api/documents", documentRoutes);
 
-// Static files for documents
-app.use("/documents", express.static(path.join(__dirname, "public/documents")));
+// Static files + Dynamic On-Demand Document Generator routes
+app.use("/documents", documentRoutes);
+app.use("/public/documents", documentRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
