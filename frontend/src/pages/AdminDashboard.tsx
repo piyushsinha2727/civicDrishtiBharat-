@@ -816,81 +816,149 @@ export default function AdminDashboard() {
 
       {/* COMPLAINT DETAIL DIALOG */}
       <Dialog open={complaintModalOpen} onOpenChange={setComplaintModalOpen}>
-        <DialogContent className="sm:max-w-[700px] glass-strong border-primary/20 shadow-elevated max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[850px] glass-strong border-primary/20 shadow-elevated max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black flex items-center gap-2 uppercase tracking-tight">
-              <FileText className="h-6 w-6 text-primary" /> Complaint Details
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-2xl font-black flex items-center gap-2 uppercase tracking-tight">
+                <FileText className="h-6 w-6 text-primary" /> Complaint Details
+              </DialogTitle>
+              {viewingComplaint && (
+                <div className="flex items-center gap-2 pr-6">
+                  <Badge className={getStatusColor(viewingComplaint.status)}>{viewingComplaint.status}</Badge>
+                  {getSeverityBadge(viewingComplaint.severity)}
+                </div>
+              )}
+            </div>
           </DialogHeader>
 
           {viewingComplaint && (
             <div className="space-y-6 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="rounded-xl overflow-hidden border border-border/50 bg-secondary/20 aspect-video">
-                    {viewingComplaint.before_image ? (
-                      <img src={viewingComplaint.before_image} alt="Issue" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                        <AlertTriangle className="h-12 w-12 mb-2" />
-                        <p className="font-bold">No Image Provided</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Badge className={getStatusColor(viewingComplaint.status)}>{viewingComplaint.status}</Badge>
-                    <div className="flex gap-2">
-                       {getSeverityBadge(viewingComplaint.severity)}
+              
+              {/* SIDE-BY-SIDE VISUAL PROOF: CITIZEN (BEFORE) vs ENGINEER (AFTER) */}
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                  <Camera className="h-4 w-4 text-primary" /> Visual Inspection & Work Proof
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
+                  {/* CITIZEN REPORTED IMAGE (BEFORE) */}
+                  <div className="rounded-2xl border border-border/50 bg-secondary/15 p-3 flex flex-col justify-between space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase text-blue-500 flex items-center gap-1.5">
+                        <Camera className="h-3.5 w-3.5" /> Citizen Photo (Before)
+                      </span>
+                      <span className="text-[10px] font-bold text-muted-foreground">
+                        {new Date(viewingComplaint.created_at).toLocaleDateString()}
+                      </span>
                     </div>
+                    <div className="rounded-xl overflow-hidden border border-border/40 bg-black/40 aspect-video relative group flex items-center justify-center">
+                      {viewingComplaint.before_image ? (
+                        <img 
+                          src={viewingComplaint.before_image} 
+                          alt="Citizen Issue" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+                          onClick={() => window.open(viewingComplaint.before_image, '_blank')}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-muted-foreground p-4">
+                          <AlertTriangle className="h-8 w-8 text-muted-foreground/40 mb-1" />
+                          <p className="text-xs font-bold">No Citizen Image Provided</p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-medium truncate">
+                      Uploaded by: <span className="font-bold text-foreground">{viewingComplaint.citizen_name || 'Anonymous'}</span>
+                    </p>
                   </div>
-                </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Issue Type</h4>
-                    <p className="text-lg font-bold text-foreground capitalize">{viewingComplaint.issue_type?.replace('_', ' ')}</p>
+                  {/* ENGINEER RESOLUTION IMAGE (AFTER PROOF) */}
+                  <div className={`rounded-2xl border p-3 flex flex-col justify-between space-y-3 ${
+                    viewingComplaint.after_image 
+                      ? 'border-emerald-500/40 bg-emerald-500/5' 
+                      : 'border-border/50 bg-secondary/15'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase text-emerald-500 flex items-center gap-1.5">
+                        <Wrench className="h-3.5 w-3.5" /> Engineer Work Proof (After)
+                      </span>
+                      {viewingComplaint.after_image ? (
+                        <Badge className="bg-emerald-500 text-white text-[9px] font-black">COMPLETED</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-orange-500 border-orange-500/40 text-[9px] font-bold animate-pulse">PENDING PROOF</Badge>
+                      )}
+                    </div>
+                    <div className="rounded-xl overflow-hidden border border-border/40 bg-black/40 aspect-video relative group flex items-center justify-center">
+                      {viewingComplaint.after_image ? (
+                        <img 
+                          src={viewingComplaint.after_image} 
+                          alt="Resolution Proof" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+                          onClick={() => window.open(viewingComplaint.after_image, '_blank')}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-muted-foreground p-4 text-center">
+                          <Clock className="h-8 w-8 text-orange-500/70 mb-1 animate-pulse" />
+                          <p className="text-xs font-bold text-foreground">Pending Resolution Proof</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Engineer has not uploaded work photo yet.</p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-medium truncate">
+                      Assigned Unit: <span className="font-bold text-foreground">{viewingComplaint.assigned_engineer_name || 'Unassigned'}</span>
+                    </p>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Reference Number</h4>
-                    <p className="text-sm font-mono font-bold text-primary">{viewingComplaint.reference_number}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Reported By</h4>
-                    <p className="text-sm font-bold text-foreground">{viewingComplaint.citizen_name || 'Anonymous'}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Reported At</h4>
-                    <p className="text-sm text-foreground">{new Date(viewingComplaint.created_at).toLocaleString()}</p>
-                  </div>
+
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-border/30">
+              {/* COMPLAINT DETAILS METADATA */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-secondary/20 border border-border/40">
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase text-muted-foreground">Issue Type</h4>
+                  <p className="text-sm font-bold text-foreground capitalize mt-0.5">{viewingComplaint.issue_type?.replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase text-muted-foreground">Reference Number</h4>
+                  <p className="text-sm font-mono font-black text-primary mt-0.5">{viewingComplaint.reference_number}</p>
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase text-muted-foreground">Reported By</h4>
+                  <p className="text-sm font-bold text-foreground mt-0.5">{viewingComplaint.citizen_name || 'Anonymous'}</p>
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase text-muted-foreground">Reported At</h4>
+                  <p className="text-xs font-bold text-foreground mt-0.5">{new Date(viewingComplaint.created_at).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* LOCATION & DESCRIPTION */}
+              <div className="space-y-4 pt-2">
                 <div>
                   <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Location Address</h4>
-                  <p className="text-sm text-foreground flex items-start gap-2">
+                  <p className="text-sm text-foreground flex items-start gap-2 bg-secondary/20 p-3 rounded-xl border border-border/30">
                     <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    {viewingComplaint.address || 'Manual Location Set'}
+                    <span>{viewingComplaint.address || 'Manual Location Set'}</span>
                   </p>
                   {(viewingComplaint.latitude && viewingComplaint.longitude) && (
-                    <p className="text-[10px] text-muted-foreground font-bold mt-1 ml-6">
-                      GPS: {viewingComplaint.latitude.toFixed(6)}, {viewingComplaint.longitude.toFixed(6)}
+                    <p className="text-[10px] text-muted-foreground font-bold mt-1 ml-2">
+                      GPS Coordinates: {viewingComplaint.latitude.toFixed(6)}, {viewingComplaint.longitude.toFixed(6)}
                     </p>
                   )}
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Description</h4>
+                  <h4 className="text-xs font-bold uppercase text-muted-foreground mb-1">Citizen Description</h4>
                   <p className="text-sm text-foreground leading-relaxed bg-secondary/20 p-4 rounded-xl border border-border/30">
                     {viewingComplaint.description || "No additional description provided."}
                   </p>
                 </div>
               </div>
 
+              {/* CITIZEN SATISFACTION FEEDBACK */}
               {viewingComplaint.satisfaction_status && viewingComplaint.satisfaction_status !== "Pending" && (
-                <div className="pt-6 border-t border-border/30 space-y-4">
+                <div className="pt-4 border-t border-border/30 space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" /> Enclosures Submitted by Citizen
+                      <TrendingUp className="h-4 w-4" /> Citizen Feedback & Rating
                     </h4>
                     <Badge className={`${viewingComplaint.satisfaction_status === 'Satisfied' ? 'bg-emerald-500' : 'bg-destructive'} text-white font-black`}>
                       {viewingComplaint.satisfaction_status?.toUpperCase()}
