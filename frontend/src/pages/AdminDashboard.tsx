@@ -601,20 +601,58 @@ export default function AdminDashboard() {
                        {sortedComplaints.filter(c => ['Resolved', 'Closed'].includes(c.status)).length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground bg-secondary/20 rounded-xl border border-dashed border-border/50">No completed tasks</div>
                       ) : (
-                        sortedComplaints.filter(c => ['Resolved', 'Closed'].includes(c.status)).map(c => (
-                          <div key={c._id || c.id} onClick={() => { setViewingComplaint(c); setComplaintModalOpen(true); }} className="p-4 rounded-xl border border-border/40 bg-card hover:border-emerald-500/50 cursor-pointer transition-all shadow-sm group relative overflow-hidden">
-                             <div className="absolute top-0 right-0 w-1.5 h-full bg-emerald-500" />
-                             <div className="flex justify-between items-start mb-2">
-                               <h4 className="font-bold text-sm capitalize">{c.issue_type?.replace('_', ' ')}</h4>
-                               <CheckCircle className="h-4 w-4 text-emerald-500" />
-                             </div>
-                             <p className="text-[11px] text-muted-foreground line-clamp-1 mb-2">{c.citizen_name || 'Anonymous citizen'}</p>
-                             <div className="flex justify-between items-center text-[10px]">
-                               <span className="font-bold text-muted-foreground">Ended: {new Date(c.updated_at || c.created_at).toLocaleDateString()}</span>
-                               <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[9px] font-black border-none">ARCHIVED</Badge>
-                             </div>
-                          </div>
-                        ))
+                        sortedComplaints.filter(c => ['Resolved', 'Closed'].includes(c.status)).map(c => {
+                          const isDissatisfied = c.satisfaction_status === 'Dissatisfied';
+                          return (
+                            <div 
+                              key={c._id || c.id} 
+                              onClick={() => { setViewingComplaint(c); setComplaintModalOpen(true); }} 
+                              className={`p-4 rounded-xl border cursor-pointer transition-all shadow-sm group relative overflow-hidden ${
+                                isDissatisfied 
+                                  ? 'border-2 border-destructive bg-destructive/10 animate-pulse shadow-glow-destructive hover:bg-destructive/15' 
+                                  : 'border-border/40 bg-card hover:border-emerald-500/50'
+                              }`}
+                            >
+                               <div className={`absolute top-0 right-0 w-2 h-full ${isDissatisfied ? 'bg-destructive animate-pulse' : 'bg-emerald-500'}`} />
+                               <div className="flex justify-between items-start mb-2">
+                                 <h4 className="font-bold text-sm capitalize flex items-center gap-1.5">
+                                   {c.issue_type?.replace('_', ' ')}
+                                   {isDissatisfied && (
+                                     <span className="inline-block w-2 h-2 rounded-full bg-destructive animate-ping shrink-0" />
+                                   )}
+                                 </h4>
+                                 {isDissatisfied ? (
+                                   <AlertOctagon className="h-4 w-4 text-destructive animate-bounce shrink-0" />
+                                 ) : (
+                                   <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                                 )}
+                               </div>
+                               <p className="text-[11px] text-muted-foreground line-clamp-1 mb-2 font-bold italic">
+                                 Engineer: {c.assigned_engineer_name || 'N/A'} • Citizen: {c.citizen_name || 'Anonymous'}
+                               </p>
+
+                               {isDissatisfied && (
+                                 <div className="p-2 mb-2 rounded-lg bg-destructive/20 border border-destructive/30 text-[10px] text-destructive font-black leading-tight flex items-center gap-1.5">
+                                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 animate-bounce" />
+                                   <span className="truncate">UNSATISFACTORY: "{c.citizen_feedback || 'Citizen rejected resolution'}"</span>
+                                 </div>
+                               )}
+
+                               <div className="flex justify-between items-center text-[10px]">
+                                 <span className="font-bold text-muted-foreground">Ended: {new Date(c.updated_at || c.created_at).toLocaleDateString()}</span>
+                                 {isDissatisfied ? (
+                                   <Badge className="bg-destructive text-white hover:bg-destructive text-[9px] font-black border-none animate-bounce shadow-glow-destructive">
+                                     ACTION REQUIRED
+                                   </Badge>
+                                 ) : (
+                                   <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 text-[9px] font-black border-none">
+                                     ARCHIVED
+                                   </Badge>
+                                 )}
+                               </div>
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   </div>

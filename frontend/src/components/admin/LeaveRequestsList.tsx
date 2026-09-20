@@ -63,31 +63,31 @@ export function LeaveRequestsList({ onStatusChange }: LeaveRequestsListProps) {
       <div className="space-y-4">
         <h2 className="text-xl font-black uppercase tracking-tighter text-rose-500 flex items-center gap-2">
           <Clock className="h-5 w-5" /> Pending Approval
-          <Badge className="bg-rose-500">{pending.length}</Badge>
+          <Badge className="bg-rose-500 animate-bounce text-white shadow-glow">{pending.length} ACTION REQUIRED</Badge>
         </h2>
         <div className="space-y-4 max-h-[800px] overflow-y-auto pr-2 custom-scrollbar">
           {pending.length === 0 ? (
             <div className="p-12 text-center border-2 border-dashed border-border/40 rounded-3xl text-muted-foreground italic">No pending leave requests</div>
           ) : (
             pending.map(l => (
-              <Card key={l._id} className="p-6 glass-panel border-l-4 border-l-rose-500 overflow-hidden relative group">
+              <Card key={l._id} className="p-6 glass-panel border-2 border-rose-500 bg-rose-500/10 shadow-glow-orange animate-pulse overflow-hidden relative group">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h4 className="font-bold text-lg">{l.engineer_id?.name || 'Engineer'}</h4>
                     <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">{l.engineer_id?.dept_name || 'Operations'}</p>
                   </div>
-                  <Badge variant="outline" className="text-[10px] uppercase font-black tracking-widest border-rose-500/30 text-rose-500">PENDING</Badge>
+                  <Badge className="text-[10px] uppercase font-black tracking-widest bg-rose-500 text-white animate-bounce shadow-md">PENDING APPROVAL</Badge>
                 </div>
                 <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-bold text-foreground">
                     <Calendar className="h-4 w-4 text-rose-500" />
-                    <span className="font-bold">{new Date(l.duration_from).toLocaleDateString()} - {new Date(l.duration_to).toLocaleDateString()}</span>
+                    <span>{new Date(l.duration_from).toLocaleDateString()} - {new Date(l.duration_to).toLocaleDateString()}</span>
                   </div>
-                  <p className="text-sm bg-secondary/30 p-3 rounded-xl border border-border/30 italic">"{l.reason}"</p>
+                  <p className="text-sm bg-secondary/60 p-3 rounded-xl border border-border/40 italic text-foreground">"{l.reason}"</p>
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={() => handleAction(l._id, 'Approved')} className="flex-1 bg-rose-500 text-white hover:bg-rose-600 font-black text-xs uppercase tracking-widest h-10 shadow-glow">Approve</Button>
-                  <Button onClick={() => handleAction(l._id, 'Rejected')} variant="outline" className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 font-black text-xs uppercase tracking-widest h-10">Reject</Button>
+                  <Button onClick={() => handleAction(l._id, 'Rejected')} variant="outline" className="flex-1 border-destructive/40 text-destructive hover:bg-destructive/10 font-black text-xs uppercase tracking-widest h-10">Reject</Button>
                 </div>
               </Card>
             ))

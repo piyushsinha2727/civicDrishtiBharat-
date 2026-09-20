@@ -14,29 +14,49 @@ export default function DashboardSidebar() {
   const location = useLocation();
   const { logout, user } = useAuth();
   const [hasPendingDiscipline, setHasPendingDiscipline] = useState(false);
+  const [hasPendingLeaves, setHasPendingLeaves] = useState(false);
+  const [hasDissatisfied, setHasDissatisfied] = useState(false);
 
   useEffect(() => {
-    const checkDisciplineNotices = async () => {
+    const checkAlerts = async () => {
       try {
-        const res = await fetch(getApiUrl('/complaints/notices/all'));
-        if (res.ok) {
-          const notices = await res.text().then(t => { try { return t ? JSON.parse(t) : []; } catch { return []; } });
-          const pending = Array.isArray(notices) && notices.some(n => 
+        // 1. Check Disciplinary notices
+        const resNotice = await fetch(getApiUrl('/complaints/notices/all'));
+        if (resNotice.ok) {
+          const notices = await resNotice.text().then(t => { try { return t ? JSON.parse(t) : []; } catch { return []; } });
+          const pendingNotice = Array.isArray(notices) && notices.some(n => 
             n.responded && (n.admin_decision === 'Pending' || !n.admin_decision || n.admin_decision === null)
           );
-          setHasPendingDiscipline(pending);
+          setHasPendingDiscipline(pendingNotice);
+        }
+
+        // 2. Check Pending Leave Requests
+        const resLeave = await fetch(getApiUrl('/leave/all'));
+        if (resLeave.ok) {
+          const leaves = await resLeave.text().then(t => { try { return t ? JSON.parse(t) : []; } catch { return []; } });
+          const pendingLeave = Array.isArray(leaves) && leaves.some(l => l.status === 'Pending');
+          setHasPendingLeaves(pendingLeave);
+        }
+
+        // 3. Check Dissatisfied Customer Complaints
+        const resComp = await fetch(getApiUrl('/complaints'));
+        if (resComp.ok) {
+          const comps = await resComp.text().then(t => { try { return t ? JSON.parse(t) : []; } catch { return []; } });
+          const hasDissat = Array.isArray(comps) && comps.some(c => c.satisfaction_status === 'Dissatisfied');
+          setHasDissatisfied(hasDissat);
         }
       } catch (err) {
-        console.error("Sidebar notice check error:", err);
+        console.error("Sidebar alerts check error:", err);
       }
     };
-    checkDisciplineNotices();
-    const interval = setInterval(checkDisciplineNotices, 4000);
+    checkAlerts();
+    const interval = setInterval(checkAlerts, 4000);
     return () => clearInterval(interval);
   }, [user, location.pathname]);
 
   const getMenuItems = () => {
     if (user?.role === 'admin') {
+      const disciplineAlert = hasPendingDiscipline || hasDissatisfied;
       return [
         { icon: LayoutDashboard, label: 'Admin Dashboard', shortLabel: 'Dashboard', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/30', action: () => navigate('/admin?tab=dashboard') },
         { icon: Shield, label: 'Command Centre', shortLabel: 'Command', color: 'text-primary', bg: 'bg-primary/10', action: () => navigate('/admin?tab=command-center') },
@@ -45,12 +65,22 @@ export default function DashboardSidebar() {
           icon: ShieldOff, 
           label: 'Compliance & Discipline', 
           shortLabel: 'Discipline',
-          color: hasPendingDiscipline ? 'text-white' : 'text-destructive', 
-          bg: hasPendingDiscipline ? 'bg-red-700' : 'bg-destructive/10', 
+          color: disciplineAlert ? 'text-white' : 'text-destructive', 
+          bg: disciplineAlert ? 'bg-red-700' : 'bg-destructive/10', 
           action: () => navigate('/admin?tab=discipline'),
-          isUrgent: hasPendingDiscipline 
+          isUrgent: disciplineAlert,
+          badgeText: hasDissatisfied ? 'ISSUE' : 'URGENT'
         },
-        { icon: Calendar, label: 'Leave Requests', shortLabel: 'Leaves', color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-100 dark:bg-rose-900/30', action: () => navigate('/admin?tab=leave-requests') },
+        { 
+          icon: Calendar, 
+          label: 'Leave Requests', 
+          shortLabel: 'Leaves', 
+          color: hasPendingLeaves ? 'text-white' : 'text-rose-600 dark:text-rose-400', 
+          bg: hasPendingLeaves ? 'bg-rose-700' : 'bg-rose-100 dark:bg-rose-900/30', 
+          action: () => navigate('/admin?tab=leave-requests'),
+          isUrgent: hasPendingLeaves,
+          badgeText: 'PENDING'
+        },
         { icon: Activity, label: 'Flood Risk Predictor', shortLabel: 'Flood Risk', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-900/30', action: () => navigate('/admin?tab=flood-risk') },
         { icon: Map, label: 'Live City Heatmap', shortLabel: 'Heatmap', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/30', action: () => navigate('/admin?tab=heatmap') },
       ];
@@ -155,7 +185,7 @@ export default function DashboardSidebar() {
                     <span className="font-bold text-[14px] flex-1 text-left truncate">{item.label}</span>
                     {isUrgent && (
                       <span className="ml-1 px-1.5 py-0.5 text-[9px] font-black uppercase bg-white text-red-600 rounded-md tracking-tighter shrink-0 animate-bounce">
-                        URGENT
+                        {(item as any).badgeText || 'URGENT'}
                       </span>
                     )}
                   </Button>
