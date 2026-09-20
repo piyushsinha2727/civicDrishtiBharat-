@@ -47,6 +47,7 @@ interface Engineer {
     admin_notes: string | null;
     reviewed_at: string | null;
   } | null;
+  pendingResponses?: number;
   email: string;
   phone: string;
 }
@@ -75,6 +76,7 @@ interface DisciplineData {
     totalEngineers: number;
     violationsToday: number;
     activeWarnings: number;
+    pendingReviews?: number;
     suspendedEngineers: number;
   };
 }
@@ -320,13 +322,40 @@ export default function DisciplineModule() {
         </div>
       </div>
 
+      {/* URGENT REVIEW ALERT BANNER */}
+      {(data?.summary?.pendingReviews ?? 0) > 0 && (
+        <div className="p-4 rounded-2xl bg-red-600/15 border-2 border-red-500 shadow-xl flex items-center justify-between gap-4 animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-red-600 flex items-center justify-center text-white shrink-0 shadow-lg">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-red-600 dark:text-red-400">
+                🚨 Immediate Action: {data?.summary?.pendingReviews} Disciplinary Explanation(s) Awaiting Review
+              </h3>
+              <p className="text-xs text-muted-foreground font-medium">
+                Engineers have submitted formal explanations & site evidence. Click "Review Response" on the highlighted row below to accept or reject.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
           { label: 'Total Engineers', value: data.summary.totalEngineers, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
           { label: 'Violations Today', value: data.summary.violationsToday, icon: AlertTriangle, color: 'text-orange-500', bg: 'bg-orange-500/10' },
           { label: 'Active Warnings', value: data.summary.activeWarnings, icon: AlertOctagon, color: 'text-red-500', bg: 'bg-red-500/10' },
-          { label: 'Suspended Engineers', value: data.summary.suspendedEngineers, icon: Ban, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+          { 
+            label: 'Responses to Review', 
+            value: data.summary.pendingReviews || engineers.filter((e: Engineer) => (e.pendingResponses || 0) > 0).length, 
+            icon: MessageSquare, 
+            color: 'text-rose-500', 
+            bg: 'bg-rose-500/10',
+            highlight: (data.summary.pendingReviews || 0) > 0
+          },
+          { label: 'Suspended', value: data.summary.suspendedEngineers, icon: Ban, color: 'text-purple-500', bg: 'bg-purple-500/10' },
           { 
             label: 'Pending Appeals', 
             value: engineers.filter((e: Engineer) => e.is_suspended && e.suspension_appeal?.submitted && e.suspension_appeal?.status === 'Pending').length,
@@ -335,13 +364,13 @@ export default function DisciplineModule() {
             bg: 'bg-amber-500/10' 
           },
         ].map((stat, i) => (
-          <Card key={i} className="glass-panel border-border/40 hover:border-border transition-all group overflow-hidden relative">
+          <Card key={i} className={`glass-panel border-border/40 hover:border-border transition-all group overflow-hidden relative ${stat.highlight ? 'border-red-500/60 shadow-lg shadow-red-500/10' : ''}`}>
             <div className={`absolute top-0 right-0 w-16 h-16 ${stat.bg} rounded-bl-full opacity-50 group-hover:scale-110 transition-transform`} />
-            <CardContent className="p-6 relative">
-              <div className="flex justify-between items-start mb-4">
-                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+            <CardContent className="p-5 relative">
+              <div className="flex justify-between items-start mb-3">
+                <stat.icon className={`h-5 w-5 ${stat.color}`} />
               </div>
-              <div className="text-4xl font-black text-foreground mb-1">{stat.value}</div>
+              <div className="text-3xl font-black text-foreground mb-1">{stat.value}</div>
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</p>
             </CardContent>
           </Card>
@@ -408,14 +437,26 @@ export default function DisciplineModule() {
                   </td>
                 </tr>
               ) : (
-                filteredEngineers.map((eng: Engineer) => (
-                  <tr key={eng.id || eng._id} className="hover:bg-secondary/20 transition-colors group">
+                filteredEngineers.map((eng: Engineer) => {
+                  const hasPendingResponse = (eng.pendingResponses || 0) > 0;
+                  return (
+                  <tr key={eng.id || eng._id} className={`hover:bg-secondary/20 transition-colors group ${hasPendingResponse ? 'bg-red-600/10 border-l-4 border-l-red-500' : ''}`}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`h-10 w-10 rounded-full flex items-center justify-center font-black text-xs ${getScoreColor(eng.complianceScore)}`}>
                           {eng.name.charAt(0)}
                         </div>
-                        <div className="font-bold text-foreground group-hover:text-primary transition-colors">{eng.name}</div>
+                        <div>
+                          <div className="font-bold text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                            {eng.name}
+                            {hasPendingResponse && (
+                              <span className="px-1.5 py-0.5 text-[9px] font-black uppercase bg-red-600 text-white rounded animate-pulse">
+                                Response In
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">{eng.email}</div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -439,14 +480,24 @@ export default function DisciplineModule() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="rounded-xl h-9 hover:bg-secondary/80 font-bold"
-                          onClick={() => openDetails(eng)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" /> Details
-                        </Button>
+                        {hasPendingResponse ? (
+                          <Button 
+                            size="sm" 
+                            className="bg-red-600 hover:bg-red-700 text-white font-black rounded-xl h-9 text-xs uppercase shadow-md shadow-red-600/30 animate-pulse"
+                            onClick={() => openDetails(eng)}
+                          >
+                            <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Review Response
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="rounded-xl h-9 hover:bg-secondary/80 font-bold"
+                            onClick={() => openDetails(eng)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" /> Details
+                          </Button>
+                        )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="rounded-xl h-9 w-9"><MoreVertical className="h-4 w-4" /></Button>
@@ -466,7 +517,7 @@ export default function DisciplineModule() {
                       </div>
                     </td>
                   </tr>
-                ))
+                );})
               )}
             </tbody>
           </table>

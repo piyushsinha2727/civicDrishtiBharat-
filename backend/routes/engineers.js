@@ -113,6 +113,11 @@ router.get("/discipline", async (req, res) => {
             else if (complianceScore < 70) status = "Critical";
             else if (complianceScore < 90) status = "Warning";
 
+            // Check if engineer has pending responded notices awaiting admin decision
+            const pendingResponses = engNotices.filter(n => 
+                n.responded && (n.admin_decision === 'Pending' || !n.admin_decision)
+            ).length;
+
             return {
                 id: eng._id,
                 _id: eng._id,
@@ -123,6 +128,7 @@ router.get("/discipline", async (req, res) => {
                 lateTasks,
                 complianceScore,
                 status,
+                pendingResponses,
                 is_suspended: eng.is_suspended || false,
                 suspension_until: eng.suspension_until || null,
                 suspension_appeal: eng.suspension_appeal || null,
@@ -135,6 +141,7 @@ router.get("/discipline", async (req, res) => {
             totalEngineers: engineers.length,
             violationsToday: allNotices.filter(n => new Date(n.created_at).toDateString() === new Date().toDateString()).length,
             activeWarnings: allNotices.filter(n => n.admin_decision === 'Pending').length,
+            pendingReviews: allNotices.filter(n => n.responded && (n.admin_decision === 'Pending' || !n.admin_decision)).length,
             suspendedEngineers: engineers.filter(e => e.is_suspended).length
         };
 

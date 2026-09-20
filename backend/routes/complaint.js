@@ -278,7 +278,10 @@ router.post("/notice", async (req, res) => {
 // GET ALL NOTICES (For Admin review)
 router.get("/notices/all", async (req, res) => {
     try {
-        const notices = await Notice.find().populate("engineer_id", "name dept_name").populate("complaint_id", "reference_number status").sort({ created_at: -1 });
+        const notices = await Notice.find()
+            .populate("engineer_id", "name dept_name email phone")
+            .populate("complaint_id", "reference_number status issue_type address")
+            .sort({ created_at: -1 });
         res.json(notices);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -290,7 +293,9 @@ router.get("/notices/:engineer_id", async (req, res) => {
         if (!isValidObjectId(req.params.engineer_id)) {
             return res.status(400).json({ error: "Invalid engineer_id format" });
         }
-        const notices = await Notice.find({ engineer_id: req.params.engineer_id }).populate("complaint_id", "reference_number status").sort({ created_at: -1 });
+        const notices = await Notice.find({ engineer_id: req.params.engineer_id })
+            .populate("complaint_id", "reference_number status issue_type address")
+            .sort({ created_at: -1 });
         res.json(notices);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -298,17 +303,52 @@ router.get("/notices/:engineer_id", async (req, res) => {
 // RESPOND TO NOTICE
 router.post("/notices/:notice_id/respond", async (req, res) => {
     try {
-        const { reason, evidence_image } = req.body;
-        const notice = await Notice.findByIdAndUpdate(req.params.notice_id, {
-            reason,
-            evidence_image,
-            responded: true
-        }, { new: true });
+        const { isValidObjectId } = await import("mongoose");
+        const { reason, evidence_image, engineer_id } = req.body;
+        const noticeId = req.params.notice_id;
 
-        await Complaint.findByIdAndUpdate(notice.complaint_id, { status: "Compliance Review" });
+        let notice = null;
+        if (isValidObjectId(noticeId)) {
+            notice = await Notice.findByIdAndUpdate(noticeId, {
+                reason: reason || "Explanation submitted by engineer",
+                evidence_image: evidence_image || null,
+                responded: true,
+                admin_decision: "Pending"
+            }, { new: true });
+        }
 
-        res.json({ message: "Response submitted for review." });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+        // Fallback: if notice not found by exact ID, find un-responded notice for this engineer
+        if (!notice && engineer_id && isValidObjectId(engineer_id)) {
+            notice = await Notice.findOneAndUpdate(
+                { engineer_id, responded: false },
+                {
+                    reason: reason || "Explanation submitted by engineer",
+                    evidence_image: evidence_image || null,
+                    responded: true,
+                    admin_decision: "Pending"
+                },
+                { new: true, sort: { created_at: -1 } }
+            );
+        }
+
+        if (!notice) {
+            return res.status(404).json({ error: "Notice record not found or already processed." });
+        }
+
+        if (notice.complaint_id) {
+            const compId = notice.complaint_id._id || notice.complaint_id;
+            await Complaint.findByIdAndUpdate(compId, { status: "Compliance Review" });
+        }
+
+        res.json({ 
+            success: true, 
+            message: "Explanation and evidence successfully submitted to Command Center.",
+            notice 
+        });
+    } catch (err) { 
+        console.error("Notice response error:", err);
+        res.status(500).json({ error: err.message || "Failed to submit explanation" }); 
+    }
 });
 
 // REVIEW NOTICE

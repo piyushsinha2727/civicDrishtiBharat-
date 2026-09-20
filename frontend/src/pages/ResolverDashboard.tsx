@@ -10,6 +10,7 @@ import Navbar from '@/components/Navbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { compressImage } from '@/lib/imageCompressor';
 
 export default function ResolverDashboard() {
   const { user, updateUser } = useAuth();
@@ -102,12 +103,17 @@ export default function ResolverDashboard() {
     setResolveModalOpen(true);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setAfterImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file, 1280, 1280, 0.75);
+      setAfterImagePreview(compressed);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => setAfterImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const submitResolution = async () => {
@@ -127,10 +133,10 @@ export default function ResolverDashboard() {
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Failed to submit resolution");
 
-      toast.success(data.message);
+      toast.success(data.message || "Resolution submitted successfully!");
       setResolveModalOpen(false);
       fetchTasks();
     } catch (err: any) {
@@ -146,28 +152,46 @@ export default function ResolverDashboard() {
   const submitNoticeResponse = async () => {
     if (!noticeResponse.trim()) return toast.error("Please provide a reason/explanation");
 
+    const targetNotice = selectedNotice || notices.find(n => !n.responded);
+    const noticeId = targetNotice?._id || targetNotice?.id;
+    const engineerId = user?._id || user?.id;
+
+    if (!noticeId && !engineerId) {
+      return toast.error("Notice reference could not be resolved. Please refresh.");
+    }
+
     setSubmittingNotice(true);
     try {
-      const res = await fetch(getApiUrl(`/complaints/notices/${selectedNotice._id}/respond`), {
+      const endpoint = noticeId 
+        ? getApiUrl(`/complaints/notices/${noticeId}/respond`)
+        : getApiUrl('/complaints/notices/latest/respond');
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          reason: noticeResponse,
-          evidence_image: evidenceImage
+          reason: noticeResponse.trim(),
+          evidence_image: evidenceImage,
+          engineer_id: engineerId
         })
       });
 
-      if (!res.ok) throw new Error("Failed to submit response");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || data.message || "Failed to submit response to Command Center");
+      }
 
-      toast.success("Explanation submitted to Command Center.");
+      toast.success("✅ Formal explanation & site proof transmitted to Command Center.");
       setNoticeModalOpen(false);
       setNoticeResponse('');
+      setEvidenceImage(null);
       setSelectedNotice(null);
       await fetchNotices();
       await fetchTasks();
       setActiveTab('assignments');
     } catch (err: any) {
-      toast.error(err.message);
+      console.error("Notice Response Error:", err);
+      toast.error(err.message || "Failed to submit explanation");
     } finally {
       setSubmittingNotice(false);
     }
@@ -665,14 +689,24 @@ export default function ResolverDashboard() {
                     <label className="flex h-40 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-destructive/30 bg-destructive/5 transition-all hover:bg-destructive/10">
                       <Camera className="mb-2 h-8 w-8 text-destructive opacity-80" />
                       <span className="text-[10px] font-black text-destructive uppercase">Tap to Capture Site Evidence</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = () => setEvidenceImage(reader.result as string);
-                          reader.readAsDataURL(file);
-                        }
-                      }} />
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const compressed = await compressImage(file, 1280, 1280, 0.75);
+                              setEvidenceImage(compressed);
+                            } catch {
+                              const reader = new FileReader();
+                              reader.onload = () => setEvidenceImage(reader.result as string);
+                              reader.readAsDataURL(file);
+                            }
+                          }
+                        }} 
+                      />
                     </label>
                   )}
                </div>
