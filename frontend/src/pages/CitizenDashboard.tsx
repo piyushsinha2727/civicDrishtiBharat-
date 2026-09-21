@@ -74,7 +74,17 @@ export default function CitizenDashboard() {
 
   useEffect(() => {
     if (user) fetchComplaints();
+    // Auto-request location access when entering dashboard
+    captureLocation(true);
   }, [user]);
+
+  useEffect(() => {
+    if (activeTab === 'report' || analysis) {
+      if (!location) {
+        captureLocation(false);
+      }
+    }
+  }, [activeTab, analysis]);
 
   const fetchComplaints = async () => {
     try {
@@ -105,9 +115,9 @@ export default function CitizenDashboard() {
     }
   };
 
-  const captureLocation = () => {
+  const captureLocation = (silent = false) => {
     if ("geolocation" in navigator) {
-      toast.info("Fetching high-precision coordinates...");
+      if (!silent) toast.info("Requesting GPS coordinates...");
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const lat = pos.coords.latitude;
@@ -116,22 +126,24 @@ export default function CitizenDashboard() {
           console.log(`GPS Location Captured: ${lat}, ${lng} (Accuracy: ${accuracy}m)`);
           setLocation({ lat, lng });
           reverseGeocode(lat, lng);
-          toast.success(`Location locked (±${Math.round(accuracy)}m)`);
+          if (!silent) toast.success(`Location locked (±${Math.round(accuracy)}m)`);
         },
         (err) => {
           console.error("Geolocation Error:", err);
-          if (err.code === 1) toast.error("Location permission denied.");
-          else if (err.code === 3) toast.error("GPS Timeout. Using fallback...");
-          else toast.error("Could not fetch precise location.");
+          if (!silent) {
+            if (err.code === 1) toast.error("Location permission denied. Please allow location access in your browser.");
+            else if (err.code === 3) toast.error("GPS Timeout. Using fallback...");
+            else toast.error("Could not fetch precise location.");
+          }
         },
         { 
           enableHighAccuracy: true, 
           timeout: 15000, 
-          maximumAge: 0 
+          maximumAge: 60000 
         }
       );
     } else {
-      toast.error("Geolocation not supported by your browser.");
+      if (!silent) toast.error("Geolocation not supported by your browser.");
     }
   };
 

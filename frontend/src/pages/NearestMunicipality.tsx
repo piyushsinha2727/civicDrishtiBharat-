@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,16 +34,24 @@ export default function NearestMunicipality() {
     const [scanning, setScanning] = useState(false);
     const [result, setResult] = useState<any>(null);
 
-    const captureLocation = () => {
+    const captureLocation = (silent = false) => {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                    if (!silent) toast.success("Location locked successfully.");
                 },
-                () => toast.error("Please allow location access to find nearest municipality.")
+                () => {
+                    if (!silent) toast.error("Please allow location access to find nearest municipality.");
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
             );
         }
     };
+
+    useEffect(() => {
+        captureLocation(true);
+    }, []);
 
     const handleAISearch = async () => {
         if (!location) return toast.error("Please set your location on the map first.");
