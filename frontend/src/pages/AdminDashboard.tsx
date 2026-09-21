@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
-import { getApiUrl, getBaseUrl } from '@/lib/api';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { getApiUrl } from '@/lib/api';
 import { useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Users, AlertTriangle, CheckCircle, Clock, MapPin, Activity, Shield, Hash, Search, BarChart3, Map as MapIcon, TrendingUp, AlertOctagon, FileText, Trash2, Calendar, X, Edit, UserCheck, Camera, Wrench } from 'lucide-react';
+import { Users, AlertTriangle, CheckCircle, Clock, MapPin, Activity, Shield, Search, BarChart3, TrendingUp, AlertOctagon, FileText, Trash2, Calendar, UserCheck, Camera, Wrench } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,8 +16,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieChart, Pie } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
 import { LeaveRequestsList } from '@/components/admin/LeaveRequestsList';
@@ -62,18 +59,7 @@ export default function AdminDashboard() {
   const [sortBy, setSortBy] = useState<'created_at' | 'predicted_days' | 'severity'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  useEffect(() => {
-    console.log("AdminDashboard activeTab:", activeTab);
-    console.log("AdminDashboard notices:", notices);
-  }, [activeTab, notices]);
-
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000); // Polling every 10s
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async (isInitial = false) => {
     try {
       const [compRes, engRes, noticeRes] = await Promise.all([
         fetch(getApiUrl('/complaints')),
@@ -81,19 +67,32 @@ export default function AdminDashboard() {
         fetch(getApiUrl('/complaints/notices/all'))
       ]);
       const parseRes = async (r: Response) => { const t = await r.text(); try { return t ? JSON.parse(t) : []; } catch { return []; } };
-      const compData = await parseRes(compRes);
-      const engData = await parseRes(engRes);
-      const noticeData = await parseRes(noticeRes);
-      setComplaints(compData);
-      setEngineers(engData);
-      setNotices(noticeData);
+      const [compData, engData, noticeData] = await Promise.all([
+        parseRes(compRes),
+        parseRes(engRes),
+        parseRes(noticeRes)
+      ]);
+      setComplaints(Array.isArray(compData) ? compData : []);
+      setEngineers(Array.isArray(engData) ? engData : []);
+      setNotices(Array.isArray(noticeData) ? noticeData : []);
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to synchronize with Command Centre");
+      if (isInitial) {
+        toast.error("Failed to synchronize with Command Centre");
+      }
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData(true);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchData(false);
+      }
+    }, 15000); // Polling every 15s when active tab
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const handleReviewDecision = async (action: 'accept' | 'reject') => {
     if (!reviewNotes.trim()) return toast.error("Please provide review notes/feedback.");
@@ -248,21 +247,24 @@ export default function AdminDashboard() {
     }
   };
 
-  const sortedComplaints = [...complaints]
-    .filter(c => 
-      c.issue_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.reference_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.address?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      const valA = a[sortBy];
-      const valB = b[sortBy];
-      if (sortOrder === 'asc') {
-        return valA > valB ? 1 : -1;
-      } else {
-        return valA < valB ? 1 : -1;
-      }
-    });
+  const sortedComplaints = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return [...complaints]
+      .filter(c => 
+        (c.issue_type && c.issue_type.toLowerCase().includes(term)) ||
+        (c.reference_number && c.reference_number.toLowerCase().includes(term)) ||
+        (c.address && c.address.toLowerCase().includes(term))
+      )
+      .sort((a, b) => {
+        const valA = a[sortBy];
+        const valB = b[sortBy];
+        if (sortOrder === 'asc') {
+          return valA > valB ? 1 : -1;
+        } else {
+          return valA < valB ? 1 : -1;
+        }
+      });
+  }, [complaints, searchTerm, sortBy, sortOrder]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

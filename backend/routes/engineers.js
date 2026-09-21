@@ -16,20 +16,23 @@ router.get("/", async (req, res) => {
             filter.dept_name = department;
         }
 
-        const engineers = await User.find(filter)
-            .select("name email phone dept_name activity_status experience_level gov_id area city state head_of_dept position area_expertise created_at")
-            .lean();
+        const [engineers, activeCounts] = await Promise.all([
+            User.find(filter)
+                .select("name email phone dept_name activity_status experience_level gov_id area city state head_of_dept position area_expertise created_at is_suspended suspension_until")
+                .lean(),
+            Assignment.aggregate([
+                { $match: { status: { $in: ["Assigned", "In Progress"] } } },
+                { $group: { _id: "$engineer_id", count: { $sum: 1 } } }
+            ])
+        ]);
 
-        // Count active tasks for each engineer
-        const result = await Promise.all(
-            engineers.map(async (eng) => {
-                const activeTasks = await Assignment.countDocuments({
-                    engineer_id: eng._id,
-                    status: { $in: ["Assigned", "In Progress"] }
-                });
-                return { ...eng, id: eng._id, active_tasks: activeTasks };
-            })
-        );
+        const taskCountMap = new Map(activeCounts.map(item => [item._id?.toString(), item.count]));
+
+        const result = engineers.map((eng) => ({
+            ...eng,
+            id: eng._id,
+            active_tasks: taskCountMap.get(eng._id.toString()) || 0
+        }));
 
         // Sort: fewer active tasks first, then by activity_status
         result.sort((a, b) => {
@@ -73,26 +76,43 @@ router.delete("/:id", async (req, res) => {
 // GET DISCIPLINE DATA
 router.get("/discipline", async (req, res) => {
     try {
-        const engineers = await User.find({ role: "resolver" }).lean();
-        const allAssignments = await Assignment.find().lean();
-        const allNotices = await Notice.find().lean();
-        const allComplaints = await Complaint.find().lean();
+        const [engineers, allAssignments, allNotices, dissatisfiedComplaints] = await Promise.all([
+            User.find({ role: "resolver" }).select("name email phone dept_name is_suspended suspension_until suspension_appeal").lean(),
+            Assignment.find().select("engineer_id complaint_id status updatedAt deadline").lean(),
+            Notice.find().select("engineer_id admin_decision responded created_at").lean(),
+            Complaint.find({ satisfaction_status: 'Dissatisfied' }).select("_id").lean()
+        ]);
 
-        const data = await Promise.all(engineers.map(async (eng) => {
-            const engAssignments = allAssignments.filter(a => a.engineer_id.toString() === eng._id.toString());
-            const engNotices = allNotices.filter(n => n.engineer_id.toString() === eng._id.toString());
+        const dissatisfiedIdSet = new Set(dissatisfiedComplaints.map(c => c._id.toString()));
+
+        // Group assignments by engineer_id
+        const assignmentsByEng = new Map();
+        for (const a of allAssignments) {
+            const key = a.engineer_id?.toString();
+            if (!key) continue;
+            if (!assignmentsByEng.has(key)) assignmentsByEng.set(key, []);
+            assignmentsByEng.get(key).push(a);
+        }
+
+        // Group notices by engineer_id
+        const noticesByEng = new Map();
+        for (const n of allNotices) {
+            const key = n.engineer_id?.toString();
+            if (!key) continue;
+            if (!noticesByEng.has(key)) noticesByEng.set(key, []);
+            noticesByEng.get(key).push(n);
+        }
+
+        const data = engineers.map((eng) => {
+            const engIdStr = eng._id.toString();
+            const engAssignments = assignmentsByEng.get(engIdStr) || [];
+            const engNotices = noticesByEng.get(engIdStr) || [];
             
             // Violations: Rejected notices or Dissatisfied complaints where this engineer was assigned
             const rejectedNotices = engNotices.filter(n => n.admin_decision === 'Rejected').length;
             
-            // For dissatisfied complaints, find which ones were assigned to this specific engineer
-            const dissociatedAssignedComplaints = allAssignments
-                .filter(a => a.engineer_id.toString() === eng._id.toString())
-                .map(a => a.complaint_id.toString());
-                
-            const dissatisfiedComplaintsCount = allComplaints.filter(c => 
-                c.satisfaction_status === 'Dissatisfied' && 
-                dissociatedAssignedComplaints.includes(c._id.toString())
+            const dissatisfiedComplaintsCount = engAssignments.filter(a => 
+                a.complaint_id && dissatisfiedIdSet.has(a.complaint_id.toString())
             ).length;
 
             const violations = rejectedNotices + dissatisfiedComplaintsCount;
@@ -135,11 +155,12 @@ router.get("/discipline", async (req, res) => {
                 email: eng.email,
                 phone: eng.phone
             };
-        }));
+        });
 
+        const todayStr = new Date().toDateString();
         const summary = {
             totalEngineers: engineers.length,
-            violationsToday: allNotices.filter(n => new Date(n.created_at).toDateString() === new Date().toDateString()).length,
+            violationsToday: allNotices.filter(n => n.created_at && new Date(n.created_at).toDateString() === todayStr).length,
             activeWarnings: allNotices.filter(n => n.admin_decision === 'Pending').length,
             pendingReviews: allNotices.filter(n => n.responded && (n.admin_decision === 'Pending' || !n.admin_decision)).length,
             suspendedEngineers: engineers.filter(e => e.is_suspended).length

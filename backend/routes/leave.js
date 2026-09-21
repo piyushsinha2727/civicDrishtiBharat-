@@ -45,7 +45,7 @@ router.post("/apply", async (req, res) => {
 // GET ALL LEAVE APPLICATIONS (Admin)
 router.get("/all", async (req, res) => {
     try {
-        const leaves = await Leave.find().populate("engineer_id", "name dept_name").sort({ submitted_at: -1 });
+        const leaves = await Leave.find().populate("engineer_id", "name dept_name").sort({ submitted_at: -1 }).lean();
         res.json(leaves);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -55,7 +55,7 @@ router.get("/all", async (req, res) => {
 // GET LEAVE BY ENGINEER ID
 router.get("/status/:engineer_id", async (req, res) => {
     try {
-        const leaves = await Leave.find({ engineer_id: req.params.engineer_id }).sort({ submitted_at: -1 });
+        const leaves = await Leave.find({ engineer_id: req.params.engineer_id }).sort({ submitted_at: -1 }).lean();
         res.json(leaves);
     } catch (err) {
         res.status(500).json({ error: err.message });

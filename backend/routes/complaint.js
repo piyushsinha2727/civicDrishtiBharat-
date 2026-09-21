@@ -134,22 +134,24 @@ router.get("/", async (req, res) => {
         if (req.query.user_id) {
             complaints = await Complaint.find({ user_id: req.query.user_id })
                 .populate("user_id", "name")
-                .sort({ created_at: -1 });
+                .sort({ created_at: -1 })
+                .lean();
+            return res.json(complaints.map(c => ({ ...c, id: c._id, citizen_name: c.user_id?.name || null })));
         } else if (req.query.engineer_id) {
             const eng_id = req.query.engineer_id === 'undefined' ? null : req.query.engineer_id;
             if (!eng_id) return res.json([]);
 
-            const assignments = await Assignment.find({ engineer_id: eng_id });
+            const assignments = await Assignment.find({ engineer_id: eng_id }).lean();
             const complaintIds = assignments.map(a => a.complaint_id);
             complaints = await Complaint.find({ _id: { $in: complaintIds } })
                 .populate("user_id", "name")
-                .sort({ created_at: -1 });
+                .sort({ created_at: -1 })
+                .lean();
 
+            const assignmentMap = new Map(assignments.map(a => [a.complaint_id?.toString(), a]));
             const resultWithAssignments = complaints.map(c => {
-                const obj = c.toObject();
-                obj.id = obj._id;
-                obj.citizen_name = obj.user_id?.name || null;
-                const assignment = assignments.find(a => a.complaint_id.toString() === c._id.toString());
+                const obj = { ...c, id: c._id, citizen_name: c.user_id?.name || null };
+                const assignment = assignmentMap.get(c._id.toString());
                 if (assignment) {
                     obj.deadline = assignment.deadline;
                     obj.assigned_at = assignment.assigned_at;
@@ -158,27 +160,29 @@ router.get("/", async (req, res) => {
             });
             return res.json(resultWithAssignments);
         } else {
-            complaints = await Complaint.find()
-                .populate("user_id", "name")
-                .sort({ created_at: -1 });
-        }
+            const [rawComplaints, allAssignments] = await Promise.all([
+                Complaint.find()
+                    .populate("user_id", "name")
+                    .sort({ created_at: -1 })
+                    .lean(),
+                Assignment.find().populate("engineer_id", "name dept_name").lean()
+            ]);
 
-        const allAssignments = await Assignment.find().populate("engineer_id", "name dept_name");
-        const result = complaints.map(c => {
-            const obj = c.toObject();
-            obj.id = obj._id;
-            obj.citizen_name = obj.user_id?.name || null;
-            const assignment = allAssignments.find(a => a.complaint_id.toString() === c._id.toString());
-            if (assignment) {
-                obj.assigned_engineer_name = assignment.engineer_id?.name || "Unknown";
-                obj.assigned_engineer_dept = assignment.engineer_id?.dept_name || null;
-                obj.engineer_id = assignment.engineer_id?._id || assignment.engineer_id;
-                obj.deadline = assignment.deadline;
-                obj.assigned_at = assignment.assigned_at;
-            }
-            return obj;
-        });
-        res.json(result);
+            const assignmentMap = new Map(allAssignments.map(a => [a.complaint_id?.toString(), a]));
+            const result = rawComplaints.map(c => {
+                const obj = { ...c, id: c._id, citizen_name: c.user_id?.name || null };
+                const assignment = assignmentMap.get(c._id.toString());
+                if (assignment) {
+                    obj.assigned_engineer_name = assignment.engineer_id?.name || "Unknown";
+                    obj.assigned_engineer_dept = assignment.engineer_id?.dept_name || null;
+                    obj.engineer_id = assignment.engineer_id?._id || assignment.engineer_id;
+                    obj.deadline = assignment.deadline;
+                    obj.assigned_at = assignment.assigned_at;
+                }
+                return obj;
+            });
+            return res.json(result);
+        }
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -281,7 +285,8 @@ router.get("/notices/all", async (req, res) => {
         const notices = await Notice.find()
             .populate("engineer_id", "name dept_name email phone")
             .populate("complaint_id", "reference_number status issue_type address")
-            .sort({ created_at: -1 });
+            .sort({ created_at: -1 })
+            .lean();
         res.json(notices);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
