@@ -1,6 +1,7 @@
 /**
  * Universal robust location utility for CivicDrishti Bharat
- * Handles Browser GPS + Localhost Wi-Fi / IP fallback so location ALWAYS works.
+ * Triggers Browser Native Location Prompt ("Allow", "Allow for only now", "Don't allow")
+ * with intelligent fallback if permission is denied.
  */
 
 export interface LocationResult {
@@ -41,7 +42,7 @@ export const fetchIPLocation = async (): Promise<LocationResult> => {
       const city = data.city || '';
       const region = data.region || '';
       const country = data.country || '';
-      const address = [city, region, country].filter(Boolean).join(', ') || 'Local Network Location';
+      const address = [city, region, country].filter(Boolean).join(', ') || 'Network Location';
       return { lat, lng, address, source: 'ip' };
     }
   } catch (err) {
@@ -57,7 +58,7 @@ export const fetchIPLocation = async (): Promise<LocationResult> => {
       const lng = parseFloat(data.longitude);
       const city = data.city || data.locality || '';
       const region = data.principalSubdivision || '';
-      const address = [city, region].filter(Boolean).join(', ') || 'Local Network Location';
+      const address = [city, region].filter(Boolean).join(', ') || 'Network Location';
       return { lat, lng, address, source: 'ip' };
     }
   } catch (err) {
@@ -74,9 +75,12 @@ export const fetchIPLocation = async (): Promise<LocationResult> => {
 };
 
 /**
- * Get best available location with automatic fallback on localhost / desktop
+ * Directly invokes browser native Location Permission Dialog:
+ * - "Allow"
+ * - "Allow this time" / "Allow for only now"
+ * - "Don't allow"
  */
-export const getBestLocation = (timeoutMs = 6000): Promise<LocationResult> => {
+export const getBestLocation = (timeoutMs = 15000): Promise<LocationResult> => {
   return new Promise((resolve) => {
     if (!("geolocation" in navigator)) {
       fetchIPLocation().then(resolve);
@@ -85,11 +89,11 @@ export const getBestLocation = (timeoutMs = 6000): Promise<LocationResult> => {
 
     let hasResolved = false;
 
-    // Timeout fallback trigger
+    // Timeout fallback trigger if browser/GPS does not answer in timeoutMs
     const timeoutId = setTimeout(async () => {
       if (!hasResolved) {
         hasResolved = true;
-        console.warn("Browser GPS timed out, falling back to IP Geolocation for localhost...");
+        console.warn("Browser GPS timed out, falling back to network IP location...");
         const ipLoc = await fetchIPLocation();
         resolve(ipLoc);
       }
@@ -111,15 +115,23 @@ export const getBestLocation = (timeoutMs = 6000): Promise<LocationResult> => {
         if (!hasResolved) {
           hasResolved = true;
           clearTimeout(timeoutId);
-          console.warn("Browser GPS error code " + err.code + ", falling back to IP Geolocation:", err.message);
-          const ipLoc = await fetchIPLocation();
-          resolve(ipLoc);
+          console.warn(`Browser location error (Code: ${err.code}): ${err.message}`);
+          
+          if (err.code === 1) {
+            // User selected "Don't allow" / "Block"
+            const ipLoc = await fetchIPLocation();
+            resolve({ ...ipLoc, source: 'default' });
+          } else {
+            // Unavailable or timeout -> use network fallback
+            const ipLoc = await fetchIPLocation();
+            resolve(ipLoc);
+          }
         }
       },
       {
-        enableHighAccuracy: false, // false is 10x faster and works much better on Wi-Fi / localhost
+        enableHighAccuracy: true, // Forces precise GPS / hardware location prompt
         timeout: timeoutMs,
-        maximumAge: 300000
+        maximumAge: 0 // Forces fresh browser permission popup on each session
       }
     );
   });
