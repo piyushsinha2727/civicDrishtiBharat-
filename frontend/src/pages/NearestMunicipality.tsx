@@ -7,9 +7,10 @@ import Navbar from '@/components/Navbar';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { MapPin, Navigation, Building2, Phone, Mail, Sparkles, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { getBestLocation } from '@/lib/location';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
@@ -21,6 +22,14 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 function LocationMarker({ position, setPosition }: { position: any, setPosition: any }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (position && position.lat && position.lng) {
+            map.flyTo([position.lat, position.lng], 14, { animate: true });
+        }
+    }, [position, map]);
+
     useMapEvents({
         click(e) {
             setPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
@@ -34,18 +43,15 @@ export default function NearestMunicipality() {
     const [scanning, setScanning] = useState(false);
     const [result, setResult] = useState<any>(null);
 
-    const captureLocation = (silent = false) => {
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                    if (!silent) toast.success("Location locked successfully.");
-                },
-                () => {
-                    if (!silent) toast.error("Please allow location access to find nearest municipality.");
-                },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
-            );
+    const captureLocation = async (silent = false) => {
+        try {
+            const loc = await getBestLocation(6000);
+            setLocation({ lat: loc.lat, lng: loc.lng });
+            if (!silent) {
+                toast.success(loc.source === 'gps' ? "GPS location locked." : `Location locked (${loc.address || 'Detected'})`);
+            }
+        } catch (e) {
+            if (!silent) toast.error("Could not fetch location. Click on the map to set location manually.");
         }
     };
 

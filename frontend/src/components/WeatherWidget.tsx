@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, Loader2, MapPin, Moon, Sun } from 'lucide-react';
+import { getBestLocation } from '@/lib/location';
 
 interface WeatherData {
     temperature: number;
@@ -81,32 +82,19 @@ export function WeatherWidget() {
             }
         };
 
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    fetchWeather(position.coords.latitude, position.coords.longitude);
-                },
-                () => {
-                    // Fallback to a default location (e.g. New Delhi) if permission denied
-                    fetchWeather(28.6139, 77.2090);
-                },
-                { timeout: 10000 }
-            );
-        } else {
-            // Fallback
-            fetchWeather(28.6139, 77.2090);
-        }
+        const updateWeather = async () => {
+            try {
+                const loc = await getBestLocation(5000);
+                await fetchWeather(loc.lat, loc.lng);
+            } catch {
+                await fetchWeather(28.6139, 77.2090);
+            }
+        };
+
+        updateWeather();
 
         // Refresh every 30 minutes
-        const interval = setInterval(() => {
-            setLoading(true);
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => fetchWeather(pos.coords.latitude, pos.coords.longitude),
-                    () => fetchWeather(28.6139, 77.2090)
-                );
-            }
-        }, 30 * 60 * 1000);
+        const interval = setInterval(updateWeather, 30 * 60 * 1000);
 
         return () => clearInterval(interval);
     }, []);

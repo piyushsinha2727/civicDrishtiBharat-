@@ -21,9 +21,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { getBestLocation, reverseGeocodeCoord } from '@/lib/location';
 
 // Fix leaflet marker icons
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -37,6 +38,14 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 function LocationMarker({ position, setPosition, onLocationChange }: { position: any, setPosition: any, onLocationChange: (lat: number, lng: number) => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (position && position.lat && position.lng) {
+      map.flyTo([position.lat, position.lng], 15, { animate: true });
+    }
+  }, [position, map]);
+
   useMapEvents({
     click(e) {
       setPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
@@ -99,51 +108,27 @@ export default function CitizenDashboard() {
   };
 
   const reverseGeocode = async (lat: number, lng: number) => {
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-      const data = await res.json();
-      if (data && data.address) {
-        const addr = data.address;
-        const main = addr.road || addr.suburb || addr.neighbourhood || addr.amenity || "";
-        const city = addr.city || addr.town || addr.village || addr.county || "";
-        const state = addr.state || "";
-        const display = [main, city, state].filter(Boolean).join(", ");
-        setAddress(display || data.display_name);
-      }
-    } catch (err) {
-      console.error("Geocoding failed", err);
-    }
+    const addr = await reverseGeocodeCoord(lat, lng);
+    setAddress(addr);
   };
 
-  const captureLocation = (silent = false) => {
-    if ("geolocation" in navigator) {
-      if (!silent) toast.info("Requesting GPS coordinates...");
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const accuracy = pos.coords.accuracy;
-          console.log(`GPS Location Captured: ${lat}, ${lng} (Accuracy: ${accuracy}m)`);
-          setLocation({ lat, lng });
-          reverseGeocode(lat, lng);
-          if (!silent) toast.success(`Location locked (±${Math.round(accuracy)}m)`);
-        },
-        (err) => {
-          console.error("Geolocation Error:", err);
-          if (!silent) {
-            if (err.code === 1) toast.error("Location permission denied. Please allow location access in your browser.");
-            else if (err.code === 3) toast.error("GPS Timeout. Using fallback...");
-            else toast.error("Could not fetch precise location.");
-          }
-        },
-        { 
-          enableHighAccuracy: true, 
-          timeout: 15000, 
-          maximumAge: 60000 
+  const captureLocation = async (silent = false) => {
+    if (!silent) toast.info("Detecting incident location...");
+    try {
+      const loc = await getBestLocation(6000);
+      setLocation({ lat: loc.lat, lng: loc.lng });
+      if (loc.address) {
+        setAddress(loc.address);
+      }
+      if (!silent) {
+        if (loc.source === 'gps') {
+          toast.success(`GPS Location locked (±${Math.round(loc.accuracy || 10)}m)`);
+        } else {
+          toast.success(`Network location locked: ${loc.address || 'Detected'}`);
         }
-      );
-    } else {
-      if (!silent) toast.error("Geolocation not supported by your browser.");
+      }
+    } catch (err) {
+      if (!silent) toast.error("Could not fetch location automatically. Please click map or type address.");
     }
   };
 
